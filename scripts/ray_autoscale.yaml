@@ -68,7 +68,7 @@ worker_nodes:
 
 file_mounts: {
 # path to your repo and the desired branch name
-"/tmp/path": "<PATH TO FLOW>.git/refs/heads/<BRANCH NAME>",
+"/tmp/path": "/home/samyakp/Desktop/flow.git/refs/heads/samyak-test",
 }
 
 setup_commands:
