@@ -67,7 +67,7 @@ def merge_example(render=None):
     inflow.add(
         veh_type="human",
         edge="inflow_merge",
-        vehs_per_hour=100,
+        vehs_per_hour=1000,
         departLane="free",
         departSpeed=7.5)
 
@@ -88,7 +88,15 @@ def merge_example(render=None):
         net_params=net_params,
         initial_config=initial_config)
 
-    env = WaveAttenuationMergePOEnv(env_params, sim_params, scenario)
+    obs_list = ["lane index",
+                "road id",
+                "speed",
+                "edges"]
+
+    env = WaveAttenuationMergePOEnv(env_params=env_params,
+                                    sim_params=sim_params,
+                                    scenario=scenario,
+                                    observed_list=obs_list)
 
     return Experiment(env)
 

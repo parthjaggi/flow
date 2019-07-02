@@ -73,7 +73,7 @@ class Kernel(object):
         if simulator == "traci":
             self.simulation = TraCISimulation(self)
             self.scenario = TraCIScenario(self, sim_params)
-            if observation_list:
+            if observation_list is not None:
                 self.vehicle = TraCIVehicle(self,
                                             sim_params=sim_params,
                                             observation_list=observation_list,

@@ -163,7 +163,7 @@ class Env(*classdef):
         replace all readable equivalent tags
         with Traci equivalent parameters
         """
-        if observation_list:
+        if observation_list is not None:
             observation_list = [x.lower() for x in observation_list]
 
             for index, elem in enumerate(observation_list):

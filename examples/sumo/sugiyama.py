@@ -55,7 +55,16 @@ def sugiyama_example(render=None):
         net_params=net_params,
         initial_config=initial_config)
 
-    env = AccelEnv(env_params, sim_params, scenario)
+    # These are mandatory
+    obs_list = ["lane index",
+                "road id",
+                "speed",
+                "edges"]
+
+    env = AccelEnv(env_params=env_params,
+                   sim_params=sim_params,
+                   scenario=scenario,
+                   observation_list=obs_list)
 
     return Experiment(env)
 
@@ -65,4 +74,4 @@ if __name__ == "__main__":
     exp = sugiyama_example()
 
     # run for a set number of rollouts / time steps
-    exp.run(1, 1500, 'id', 'CO', 'NOx', convert_to_csv=True)
+    exp.run(1, 1500)
