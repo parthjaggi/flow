@@ -2,7 +2,7 @@
 
 import json
 
-import ray
+import rayf
 try:
     from ray.rllib.agents.agent import get_agent_class
 except ImportError:
