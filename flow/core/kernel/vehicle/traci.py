@@ -580,10 +580,8 @@ class TraCIVehicle(KernelVehicle):
         if isinstance(veh_id, (list, np.ndarray)):
             return [self.get_speed(vehID, error) for vehID in veh_id]
         if self.__sumo_obs.get(veh_id, {}).get(tc.VAR_SPEED, error) == error:
-            print("no subscription to speed")
             return self.kernel_api.vehicle.getSpeed(veh_id)
         else:
-            print("we subscribed to speed")
             return self.__sumo_obs.get(veh_id, {}).get(tc.VAR_SPEED, error)
 
     def get_default_speed(self, veh_id, error=-1001):
@@ -591,10 +589,8 @@ class TraCIVehicle(KernelVehicle):
         if isinstance(veh_id, (list, np.ndarray)):
             return [self.get_default_speed(vehID, error) for vehID in veh_id]
         if self.__sumo_obs.get(veh_id, {}).get(tc.VAR_SPEED_WITHOUT_TRACI, error) == error:
-            print("no subscription")
             return self.kernel_api.vehicle.getSpeedWithoutTraCI(veh_id)
         else:
-            print("we subscribed")
             return self.__sumo_obs.get(veh_id, {}).get(tc.VAR_SPEED_WITHOUT_TRACI,
                                                        error)
 
@@ -603,10 +599,8 @@ class TraCIVehicle(KernelVehicle):
         if isinstance(veh_id, (list, np.ndarray)):
             return [self.get_position(vehID, error) for vehID in veh_id]
         if self.__sumo_obs.get(veh_id, {}).get(tc.VAR_LANEPOSITION, error) == error:
-            print("no subscription")
             return self.kernel_api.vehicle.getLanePosition(veh_id)
         else:
-            print("we subscribed")
             return self.__sumo_obs.get(veh_id, {}).get(tc.VAR_LANEPOSITION, error)
 
     def get_edge(self, veh_id, error=""):
@@ -614,10 +608,8 @@ class TraCIVehicle(KernelVehicle):
         if isinstance(veh_id, (list, np.ndarray)):
             return [self.get_edge(vehID, error) for vehID in veh_id]
         if self.__sumo_obs.get(veh_id, {}).get(tc.VAR_ROAD_ID, error) == error:
-            print("no subscription")
             return self.kernel_api.vehicle.getRoadID(veh_id)
         else:
-            print("we subscribed")
             return self.__sumo_obs.get(veh_id, {}).get(tc.VAR_ROAD_ID, error)
 
     def get_lane(self, veh_id, error=-1001):
@@ -625,10 +617,8 @@ class TraCIVehicle(KernelVehicle):
         if isinstance(veh_id, (list, np.ndarray)):
             return [self.get_lane(vehID, error) for vehID in veh_id]
         if self.__sumo_obs.get(veh_id, {}).get(tc.VAR_LANE_INDEX, error) == error:
-            print("no subscription")
             return self.kernel_api.vehicle.getLaneIndex(veh_id)
         else:
-            print("we subscribed")
             return self.__sumo_obs.get(veh_id, {}).get(tc.VAR_LANE_INDEX, error)
 
     def get_route(self, veh_id, error=list()):
@@ -636,10 +626,8 @@ class TraCIVehicle(KernelVehicle):
         if isinstance(veh_id, (list, np.ndarray)):
             return [self.get_route(vehID, error) for vehID in veh_id]
         if self.__sumo_obs.get(veh_id, {}).get(tc.VAR_EDGES, error) == error:
-            print("no subscription")
             return self.kernel_api.vehicle.getRoute(veh_id)
         else:
-            print("we subscribed")
             return self.__sumo_obs.get(veh_id, {}).get(tc.VAR_EDGES, error)
 
     def get_length(self, veh_id, error=-1001):
