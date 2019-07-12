@@ -22,7 +22,9 @@ from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 import matplotlib.colors as colors
 import numpy as np
+import os 
 import argparse
+import glob 
 
 # scenarios that can be plotted by this method
 ACCEPTABLE_SCENARIOS = [
@@ -73,7 +75,7 @@ def import_data_from_emission(fp):
     return ret
 
 
-def get_time_space_data(data, params):
+def get_time_space_data(data, total_len):
     r"""Compute the unique inflows and subsequent outflow statistics.
 
     Parameters
@@ -114,10 +116,6 @@ def get_time_space_data(data, params):
     AssertionError
         if the specified scenario is not supported by this method
     """
-    # check that the scenario is appropriate
-    assert params['scenario'] in ACCEPTABLE_SCENARIOS, \
-        'Scenario must be one of: ' + ', '.join(ACCEPTABLE_SCENARIOS)
-
     # switcher used to compute the positions based on the type of scenario
     switcher = {
         'LoopScenario': _ring_road,
@@ -132,10 +130,10 @@ def get_time_space_data(data, params):
     all_time = np.sort(np.unique(all_time))
 
     # Get the function from switcher dictionary
-    func = switcher[params['scenario']]
+    func = switcher["LoopScenario"]
 
     # Execute the function
-    pos, speed = func(data, params, all_time)
+    pos, speed = func(data, total_len, all_time)
 
     return pos, speed, all_time
 
@@ -214,7 +212,7 @@ def _merge(data, params, all_time):
     return pos, speed
 
 
-def _ring_road(data, params, all_time):
+def _ring_road(data, total_len, all_time):
     r"""Generate position and speed data for the ring road.
 
     Vehicles that reach the top of the plot simply return to the bottom and
@@ -246,9 +244,6 @@ def _ring_road(data, params, all_time):
         time step. Set to zero if the vehicle is not present in the network at
         that time step.
     """
-    # import network data from flow params
-    total_len = params['net'].additional_params['length']
-
     # generate edge starts
     edgestarts = {
         'bottom': 0,
@@ -397,13 +392,11 @@ if __name__ == '__main__':
         description='[Flow] Generates time space diagrams for flow networks.',
         epilog='python time_space_diagram.py </path/to/emission>.csv '
                '</path/to/flow_params>.json')
-
+    """
     # required arguments
-    parser.add_argument('emission_path', type=str,
+    parser.add_argument('dir_path', type=str,
                         help='path to the csv file.')
-    parser.add_argument('flow_params', type=str,
-                        help='path to the flow_params json file.')
-
+    """
     # optional arguments
     parser.add_argument('--steps', type=int, default=1,
                         help='rate at which steps are plotted.')
@@ -418,75 +411,91 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # flow_params is imported as a dictionary
-    flow_params = get_flow_params(args.flow_params)
 
-    # import data from the emission.csv file
-    emission_data = import_data_from_emission(args.emission_path)
+    # get the names of all the directories starting with \
+    path = "./flow/examples/sumo/"
+    dirs = os.listdir( path )
+    files=[] 
+    for file in dirs:
+        if file[0]=="l":
+          files.append(file)
+    for dir_i in files:
+        # from the name, extract the length
+        total_len = int(dir_i[2]+dir_i[3]+dir_i[4]) 
+       
+        # from the name, extract v_des
+        if len(dir_i)<14:
+            v_des = int(dir_i[12])
+        else: 
+            v_des = int(dir_i[12]+dir_i[13])
 
-    # compute the position and speed for all vehicles at all times
-    pos, speed, time = get_time_space_data(emission_data, flow_params)
+        # check for the elements in the dir_i folder and choose the file that ends with .csv
+        m = glob.glob("flow/examples/sumo/l={}-v_des={}/*.csv".format(total_len,v_des))
+        file_path = m[0]
 
-    # some plotting parameters
-    cdict = {
-        'red': ((0, 0, 0), (0.2, 1, 1), (0.6, 1, 1), (1, 0, 0)),
-        'green': ((0, 0, 0), (0.2, 0, 0), (0.6, 1, 1), (1, 1, 1)),
-        'blue': ((0, 0, 0), (0.2, 0, 0), (0.6, 0, 0), (1, 0, 0))
-    }
-    my_cmap = colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
+        # import data from the emission.csv file
+        emission_data = import_data_from_emission(file_path)
 
-    # perform plotting operation
-    fig = plt.figure(figsize=(16, 9))
-    ax = plt.axes()
-    norm = plt.Normalize(0, args.max_speed)
-    cols = []
+        # compute the position and speed for all vehicles at all times
+        pos, speed, time = get_time_space_data(emission_data, total_len)
 
-    xmin = max(time[0], args.start)
-    xmax = min(time[-1], args.stop)
-    xbuffer = (xmax - xmin) * 0.025  # 2.5% of range
-    ymin, ymax = np.amin(pos), np.amax(pos)
-    ybuffer = (ymax - ymin) * 0.025  # 2.5% of range
+        # some plotting parameters
+        cdict = {
+            'red': ((0, 0, 0), (0.2, 1, 1), (0.6, 1, 1), (1, 0, 0)),
+            'green': ((0, 0, 0), (0.2, 0, 0), (0.6, 1, 1), (1, 1, 1)),
+            'blue': ((0, 0, 0), (0.2, 0, 0), (0.6, 0, 0), (1, 0, 0))
+        }
+        my_cmap = colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
 
-    ax.set_xlim(xmin - xbuffer, xmax + xbuffer)
-    ax.set_ylim(ymin - ybuffer, ymax + ybuffer)
+        # perform plotting operation
+        fig = plt.figure(figsize=(16, 9))
+        ax = plt.axes()
+        norm = plt.Normalize(0, args.max_speed)
+        cols = []
 
-    for indx_car in range(pos.shape[1]):
-        unique_car_pos = pos[:, indx_car]
+        xmin = max(time[0], args.start)
+        xmax = min(time[-1], args.stop)
+        xbuffer = (xmax - xmin) * 0.025  # 2.5% of range
+        ymin, ymax = np.amin(pos), np.amax(pos)
+        ybuffer = (ymax - ymin) * 0.025  # 2.5% of range
 
-        # discontinuity from wraparound
-        disc = np.where(np.abs(np.diff(unique_car_pos)) >= 10)[0] + 1
-        unique_car_time = np.insert(time, disc, np.nan)
-        unique_car_pos = np.insert(unique_car_pos, disc, np.nan)
-        unique_car_speed = np.insert(speed[:, indx_car], disc, np.nan)
+        ax.set_xlim(xmin - xbuffer, xmax + xbuffer)
+        ax.set_ylim(ymin - ybuffer, ymax + ybuffer)
 
-        points = np.array(
-            [unique_car_time, unique_car_pos]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, cmap=my_cmap, norm=norm)
+        for indx_car in range(pos.shape[1]):
+            unique_car_pos = pos[:, indx_car]
 
-        # Set the values used for color mapping
-        lc.set_array(unique_car_speed)
-        lc.set_linewidth(1.75)
-        cols.append(lc)
+            # discontinuity from wraparound
+            disc = np.where(np.abs(np.diff(unique_car_pos)) >= 10)[0] + 1
+            unique_car_time = np.insert(time, disc, np.nan)
+            unique_car_pos = np.insert(unique_car_pos, disc, np.nan)
+            unique_car_speed = np.insert(speed[:, indx_car], disc, np.nan)
 
-    plt.title(args.title, fontsize=25)
-    plt.ylabel('Position (m)', fontsize=20)
-    plt.xlabel('Time (s)', fontsize=20)
+            points = np.array(
+                [unique_car_time, unique_car_pos]).T.reshape(-1, 1, 2)
+            segments = np.concatenate([points[:-1], points[1:]], axis=1)
+            lc = LineCollection(segments, cmap=my_cmap, norm=norm)
 
-    for col in cols:
-        line = ax.add_collection(col)
-    cbar = plt.colorbar(line, ax=ax)
-    cbar.set_label('Velocity (m/s)', fontsize=20)
-    cbar.ax.tick_params(labelsize=18)
+            # Set the values used for color mapping
+            lc.set_array(unique_car_speed)
+            lc.set_linewidth(1.75)
+            cols.append(lc)
 
-    plt.xticks(fontsize=18)
-    plt.yticks(fontsize=18)
+        # choose a title
+        title = 'l={},v_des={}'.format(total_len,v_des) 
 
-    ###########################################################################
-    #                      Note: For MergeScenario only                       #
-    if flow_params['scenario'] == 'MergeScenario':                            #
-        plt.plot(time, [0] * pos.shape[0], linewidth=3, color="white")        #
-        plt.plot(time, [-0.1] * pos.shape[0], linewidth=3, color="white")     #
-    ###########################################################################
+        plt.title(title, fontsize=25)
+        plt.ylabel('Position (m)', fontsize=20)
+        plt.xlabel('Time (s)', fontsize=20)
 
-    plt.show()
+        for col in cols:
+            line = ax.add_collection(col)
+        cbar = plt.colorbar(line, ax=ax)
+        cbar.set_label('Velocity (m/s)', fontsize=20)
+        cbar.ax.tick_params(labelsize=18)
+
+        plt.xticks(fontsize=18)
+        plt.yticks(fontsize=18)
+
+        # save image
+        plt.savefig('l={},v_des={}'.format(total_len,v_des))
