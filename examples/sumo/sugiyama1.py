@@ -16,7 +16,7 @@ import os
 """------------------------BCM Model-----------------------------------"""
 
 
-def sugiyama_example1(render=None, v_des=5, l=220):
+def sugiyama_example1(render=None, x=22):
     """
     Perform a simulation of vehicles on a ring road.
     Parameters
@@ -29,35 +29,35 @@ def sugiyama_example1(render=None, v_des=5, l=220):
         A non-rl experiment demonstrating the performance of human-driven
         vehicles on a ring road.
     """
-    sim_params = SumoParams(sim_step=0.1, render=False, emission_path='\l={}-v_des={}'.format(l,v_des) )
-    if render is not None:  
+    sim_params = SumoParams(sim_step=0.1, render=False,
+                            emission_path='\IDM+BCM/{}IDM_{}BCM'.format(x, 22-x))
+    if render is not None:
         sim_params.render = render
 
-		
     vehicles = VehicleParams()
     vehicles.add(
         veh_id="idm",
-        acceleration_controller=(BCMController, {
-            "v_des": v_des,
-            "noise": 0.1,
-        }),
+        acceleration_controller=(IDMController, {},"noise":0.1),
         routing_controller=(ContinuousRouter, {}),
-        num_vehicles=22)  
+        num_vehicles=x)
+    vehicles.add(
+        veh_id="bcm",
+        acceleration_controller=(BCMController,"noise":0.1),
+        routing_controller=(ContinuousRouter, {}),
+        num_vehicles=22-x)
 
     env_params = EnvParams(additional_params=ADDITIONAL_ENV_PARAMS)
-    
 
-    additional_net_params = ADDITIONAL_NET_PARAMS.copy()
     net_params = NetParams(
-    additional_params={
-        'length': l, 
-        'lanes': 1, 
-        'speed_limit': 30, 
-        'resolution': 40
-    }
-)
+        additional_params={
+            'length': 260,
+            'lanes': 1,
+            'speed_limit': 30,
+            'resolution': 40
+        }
+    )
 
-    initial_config = InitialConfig(perturbation=0, spacing='uniform')
+    initial_config = InitialConfig(perturbation=1, spacing='uniform')
 
     scenario = LoopScenario(
         name="sugiyama",
@@ -66,18 +66,16 @@ def sugiyama_example1(render=None, v_des=5, l=220):
         initial_config=initial_config)
 
     env = AccelEnv(env_params, sim_params, scenario)
-    	
 
     return Experiment(env)
 
 """-------------------------------------------------------------"""
 
+import random
+
 if __name__ == "__main__":
     # import the experiment variable
-    for v in range(5, 31):
-        for l in np.arange(220, 291, 5):
-            for i in range(1):
-               exp1 = sugiyama_example1(v_des=v, l=l, render=False)
-               exp1.run(1,3000,convert_to_csv=True) 
-               del exp1
-
+    for x in range(23):
+        exp1 = sugiyama_example1(x = x, render=False)
+        exp1.run(1, 6000, convert_to_csv=True)
+        del exp1
