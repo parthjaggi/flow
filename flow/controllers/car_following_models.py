@@ -312,6 +312,56 @@ class LinearOVM(BaseController):
         return (v_h - this_vel) / self.adaptation
 
 
+class PNSController(BaseController): 
+
+
+    def __init__(self,
+                 veh_id,
+                 time_delay=0.0,
+                 noise=0,
+                 fail_safe=None,
+                 car_following_params=None):
+        BaseController.__init__(
+            self,
+            veh_id,
+            car_following_params,
+            delay=time_delay,
+            fail_safe=fail_safe,
+            noise=noise)
+
+    def get_accel(self, env):
+        """See parent class."""
+    
+        s,v,x = [] ,[],[]                                           # List of headway,velocities, and xs  
+
+
+        s_star = 7.3182                                             # these values depend on the controller  ( IDM or OVM ) 
+        v_star = 5.3146 
+
+        s = env.k.vehicle.get_headway(self.veh_id)                  #find the headway of the first vehicle (s1) 
+        v = env.k.vehicle.get_speed(self.veh_id)                    #find the velocity of the first AV     (v1)
+
+        x.append(s-s_star)
+        x.append(v-v_star)
+
+
+        i = 0 
+        while i<21: 
+            lead_id = env.k.vehicle.get_leader(self.veh_id)         # update the lead id 
+            s = env.k.vehicle.get_headway(lead_id)                   # update s to be s2,s3,.....,s22 
+            v = env.k.vehicle.get_speed(lead_id)
+            x.append(s-s_star)
+            x.append(v-v_star)
+            i+=1 
+        #compute the acceleration after finding the  (n,1) x where n is the number of vehicles on the ring road 
+        n = 22 
+        x = np.reshape(x,(44,1))
+        K = [-0.42957,0.9795,0.22002,0.28955,0.19334,0.13984,0.18466,0.059871,0.17398,0.0055421,0.15502,-0.034376,0.12861,-0.061108,0.098284,-0.075078,0.06781,-0.07837,0.039934,-0.074403,0.016026,-0.066887,-0.0037837,-0.058924,-0.020215,-0.052498,-0.034376,-0.048333,-0.047324,-0.046044,-0.059736,-0.044552,-0.071775,-0.042785,-0.083245,-0.040788,-0.094162,-0.041407,-0.10598,-0.052511,-0.12373,-0.088886,-0.15919,-0.17193]
+        a = np.matmul(K,x)
+        print(-a)
+        return -a
+
+
 class IDMController(BaseController):
     """Intelligent Driver Model (IDM) controller.
 
