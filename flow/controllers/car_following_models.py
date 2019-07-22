@@ -341,31 +341,55 @@ class PNSController(BaseController):
     
         s,v,x = [] ,[],[]                                           # List of headway,velocities, and xs  
 
+        # FOR IDM Controller !! 
 
-        s_star = 7.3182                                             # these values depend on the controller  ( IDM or OVM ) 
-        v_star = 5.3146 
+        v_star = 4.8157
+        s_star =  6.8180  
+        K=[-0.95464,2.2032,0.26147,1.2331,0.63633,0.92024,0.86654,0.52388,0.94024,0.12825,0.87704,-0.19717,0.71731,-0.412,0.50987,-0.50829,0.29889,-0.50586,0.11532,-0.44032,-0.026243,-0.34996,-0.12584,-0.26547,-0.19315,-0.20448,-0.24149,-0.17126,-0.28275,-0.16005,-0.32452,-0.15974,-0.36905,-0.15803,-0.41373,-0.14533,-0.45294,-0.12019,-0.48196,-0.099521,-0.50502,-0.13163,-0.5481,-0.28571]
 
+        # FOR OVM Controller !!
+        
+        """ 
+        v_star = 9.0694
+        s_star = 6.8180
+        K=[-0.79041,4.3082,5.7045,2.2852,8.163,1.0668,7.8095,-0.83604,4.5724,-2.3559,0.083534,-2.7035,-3.4705,-1.8792,-4.7642,-0.55469,-3.9456,0.48891,-2.1702,0.86311,-0.63773,0.67655,0.082931,0.287,0.096708,-0.010375,-0.19433,-0.12364,-0.4668,-0.11216,-0.61086,-0.067385,-0.66183,-0.039267,-0.68395,-0.031113,-0.70706,-0.026942,-0.72516,-0.017337,-0.7276,-0.010351,-0.72994,-0.020352] 
+        """
+
+
+        #sc_star = 15
         s = env.k.vehicle.get_headway(self.veh_id)                  #find the headway of the first vehicle (s1) 
-        v = env.k.vehicle.get_speed(self.veh_id)                    #find the velocity of the first AV     (v1)
+        v1 = env.k.vehicle.get_speed(self.veh_id)                    #find the velocity of the first AV     (v1)
+        print(v1) 
+        x.append(s-s_star)
+        x.append(v1-v_star)
+        
+        env.k.vehicle.set_color(self.veh_id,(255,0,0))
+        lead_id = env.k.vehicle.get_follower(self.veh_id)           #update the lead_id 
+        
+        s = env.k.vehicle.get_headway(lead_id)                    #find the headway of the first vehicle (s1) 
+        v = env.k.vehicle.get_speed(lead_id)        
+       
 
         x.append(s-s_star)
         x.append(v-v_star)
-
-
+        
         i = 0 
-        while i<21: 
-            lead_id = env.k.vehicle.get_leader(self.veh_id)         # update the lead id 
-            s = env.k.vehicle.get_headway(lead_id)                   # update s to be s2,s3,.....,s22 
+        while i<20: 
+            
+            lead_id = env.k.vehicle.get_follower(lead_id)          # update the lead id 
+            s = env.k.vehicle.get_headway(lead_id)               # update s to be s3,s4,.....,s22 
             v = env.k.vehicle.get_speed(lead_id)
             x.append(s-s_star)
             x.append(v-v_star)
             i+=1 
-        #compute the acceleration after finding the  (n,1) x where n is the number of vehicles on the ring road 
+        #compute the acceleration after finding the  (n,1) x where n is the number of vehicles on the ring road
+        #print(x) 
         n = 22 
-        x = np.reshape(x,(44,1))
-        K = [-0.42957,0.9795,0.22002,0.28955,0.19334,0.13984,0.18466,0.059871,0.17398,0.0055421,0.15502,-0.034376,0.12861,-0.061108,0.098284,-0.075078,0.06781,-0.07837,0.039934,-0.074403,0.016026,-0.066887,-0.0037837,-0.058924,-0.020215,-0.052498,-0.034376,-0.048333,-0.047324,-0.046044,-0.059736,-0.044552,-0.071775,-0.042785,-0.083245,-0.040788,-0.094162,-0.041407,-0.10598,-0.052511,-0.12373,-0.088886,-0.15919,-0.17193]
+        x = np.reshape(x,(2*n,1))
+
         a = np.matmul(K,x)
-        print(-a)
+        
+        #print(-a)
         return -a
 
 
