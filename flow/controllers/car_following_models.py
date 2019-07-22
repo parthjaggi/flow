@@ -14,80 +14,12 @@ import numpy as np
 from flow.controllers.base_controller import BaseController
 
 
-class CFMController(BaseController):
-    """CFM controller.
-
-    Attributes
-    ----------
-    veh_id : str
-        Vehicle ID for SUMO identification
-    car_following_params : SumoCarFollowingParams
-        see parent class
-    k_d : float
-        headway gain (default: 1)
-    k_v : float
-        gain on difference between lead velocity and current (default: 1)
-    k_c : float
-        gain on difference from desired velocity to current (default: 1)
-    d_des : float
-        desired headway (default: 1)
-    v_des : float
-        desired velocity (default: 8)
-    time_delay : float, optional
-        time delay (default: 0.0)
-    noise : float
-        std dev of normal perturbation to the acceleration (default: 0)
-    fail_safe : str
-        type of flow-imposed failsafe the vehicle should posses, defaults
-        to no failsafe (None)
-    """
-
-    def __init__(self,
-                 veh_id,
-                 car_following_params,
-                 k_d=1,
-                 k_v=1,
-                 k_c=1,
-                 d_des=1,
-                 v_des=8,
-                 time_delay=0.0,
-                 noise=0,
-                 fail_safe=None):
-        """Instantiate a CFM controller."""
-        BaseController.__init__(
-            self,
-            veh_id,
-            car_following_params,
-            delay=time_delay,
-            fail_safe=fail_safe,
-            noise=noise)
-
-        self.veh_id = veh_id
-        self.k_d = k_d
-        self.k_v = k_v
-        self.k_c = k_c
-        self.d_des = d_des
-        self.v_des = v_des
-
-    def get_accel(self, env):
-        """See parent class."""
-        lead_id = env.k.vehicle.get_leader(self.veh_id)
-        if not lead_id:  # no car ahead
-            return self.max_accel
-
-        lead_vel = env.k.vehicle.get_speed(lead_id)
-        this_vel = env.k.vehicle.get_speed(self.veh_id)
-
-        d_l = env.k.vehicle.get_headway(self.veh_id)
-
-        return self.k_d*(d_l - self.d_des) + self.k_v*(lead_vel - this_vel) + \
-            self.k_c*(self.v_des - this_vel)
-
-
 class BCMController(BaseController):
     """Bilateral car-following model controller.
 
     This model looks ahead and behind when computing its acceleration.
+
+    See: TODO: add reference to the paper.
 
     Attributes
     ----------
@@ -171,6 +103,8 @@ class BCMController(BaseController):
 class LACController(BaseController):
     """Linear Adaptive Cruise Control.
 
+    See: TODO: add reference to the paper.
+
     Attributes
     ----------
     veh_id : str
@@ -197,8 +131,8 @@ class LACController(BaseController):
     def __init__(self,
                  veh_id,
                  car_following_params,
-                 k_1=0.3,
-                 k_2=0.4,
+                 k_1=0.7,
+                 k_2=0.8,
                  h=1,
                  tau=0.1,
                  a=0,
@@ -239,6 +173,8 @@ class LACController(BaseController):
 
 class OVMController(BaseController):
     """Optimal Vehicle Model controller.
+
+    # See: TODO: add reference to the paper.
 
     Attributes
     ----------
@@ -314,71 +250,6 @@ class OVMController(BaseController):
             v_h = self.v_max
 
         return self.alpha * (v_h - this_vel) + self.beta * h_dot
-
-
-class LinearOVM(BaseController):
-    """Linear OVM controller.
-
-    Attributes
-    ----------
-    veh_id : str
-        Vehicle ID for SUMO identification
-    car_following_params : flow.core.params.SumoCarFollowingParams
-        see parent class
-    v_max : float
-        max velocity (default: 30)
-    adaptation : float
-        adaptation constant (default: 0.65)
-    h_st : float
-        headway for stopping (default: 5)
-    time_delay : float
-        time delay (default: 0.5)
-    noise : float
-        std dev of normal perturbation to the acceleration (default: 0)
-    fail_safe : str
-        type of flow-imposed failsafe the vehicle should posses, defaults
-        to no failsafe (None)
-    """
-
-    def __init__(self,
-                 veh_id,
-                 car_following_params,
-                 v_max=30,
-                 adaptation=0.65,
-                 h_st=5,
-                 time_delay=0.0,
-                 noise=0,
-                 fail_safe=None):
-        """Instantiate a Linear OVM controller."""
-        BaseController.__init__(
-            self,
-            veh_id,
-            car_following_params,
-            delay=time_delay,
-            fail_safe=fail_safe,
-            noise=noise)
-        self.veh_id = veh_id
-        # 4.8*1.85 for case I, 3.8*1.85 for case II, per Nakayama
-        self.v_max = v_max
-        # TAU in Traffic Flow Dynamics textbook
-        self.adaptation = adaptation
-        self.h_st = h_st
-
-    def get_accel(self, env):
-        """See parent class."""
-        this_vel = env.k.vehicle.get_speed(self.veh_id)
-        h = env.k.vehicle.get_headway(self.veh_id)
-
-        # V function here - input: h, output : Vh
-        alpha = 1.689  # the average value from Nakayama paper
-        if h < self.h_st:
-            v_h = 0
-        elif self.h_st <= h <= self.h_st + self.v_max / alpha:
-            v_h = alpha * (h - self.h_st)
-        else:
-            v_h = self.v_max
-
-        return (v_h - this_vel) / self.adaptation
 
 
 class IDMController(BaseController):
