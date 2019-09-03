@@ -63,7 +63,7 @@ def visualizer_rllib(args):
 
     # check if we have a multiagent scenario but in a
     # backwards compatible way
-    if config.get('multiagent', {}).get('policy_graphs', {}):
+    if config.get('multiagent', {}).get('policies', {}):
         multiagent = True
         config['multiagent'] = pkl['multiagent']
     else:
@@ -167,7 +167,7 @@ def visualizer_rllib(args):
         rets = {}
         # map the agent id to its policy
         policy_map_fn = config['multiagent']['policy_mapping_fn'].func
-        for key in config['multiagent']['policy_graphs'].keys():
+        for key in config['multiagent']['policies'].keys():
             rets[key] = []
     else:
         rets = []
@@ -179,7 +179,7 @@ def visualizer_rllib(args):
             # map the agent id to its policy
             policy_map_fn = config['multiagent']['policy_mapping_fn'].func
             size = config['model']['lstm_cell_size']
-            for key in config['multiagent']['policy_graphs'].keys():
+            for key in config['multiagent']['policies'].keys():
                 state_init[key] = [np.zeros(size, np.float32),
                                    np.zeros(size, np.float32)
                                    ]
