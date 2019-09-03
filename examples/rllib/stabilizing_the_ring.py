@@ -146,7 +146,7 @@ if __name__ == "__main__":
             "config": {
                 **config
             },
-            "checkpoint_freq": 20,
+            "checkpoint_freq": 1,
             "checkpoint_at_end": True,
             "max_failures": 999,
             "stop": {

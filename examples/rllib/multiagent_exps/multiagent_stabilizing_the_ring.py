@@ -144,6 +144,13 @@ def setup_exps():
     test_env = create_env()
     obs_space = test_env.observation_space
     act_space = test_env.action_space
+    print("-----------")
+    print("-----------")
+    print("-----------")
+    print(obs_space.low, obs_space.high, act_space.low, act_space.high)
+    print("-----------")
+    print("-----------")
+    print("-----------")
 
     def gen_policy():
         return PPOTFPolicy, obs_space, act_space, {}
@@ -156,7 +163,7 @@ def setup_exps():
 
     config.update({
         'multiagent': {
-            'policy_graphs': policy_graphs,
+            'policies': policy_graphs,
             'policy_mapping_fn': tune.function(policy_mapping_fn),
             'policies_to_train': ['av']
         }
