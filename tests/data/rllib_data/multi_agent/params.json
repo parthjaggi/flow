@@ -63,7 +63,7 @@
     ],
     "policy_graphs": {
       "av": [
-        "<class 'ray.rllib.agents.ppo.ppo_policy_graph.PPOPolicyGraph'>",
+        "<class 'ray.rllib.agents.ppo.ppo_policy.PPOTFPolicy'>",
         "Box(3,)",
         "Box(1,)",
         {}
