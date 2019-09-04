@@ -192,6 +192,9 @@ class MultiEnv(MultiAgentEnv, Env):
             except (FatalTraCIError, TraCIException):
                 print("Error during start: {}".format(traceback.format_exc()))
 
+        # update so that all the vehicles are removed before they are added.
+        self.k.simulation.simulation_step()
+
         # reintroduce the initial vehicles to the network
         for veh_id in self.initial_ids:
             type_id, edge, lane_index, pos, speed = \

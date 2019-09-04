@@ -4,7 +4,6 @@ import unittest
 import ray
 from ray.tune import run_experiments
 
-from examples.rllib.cooperative_merge import setup_exps as coop_setup
 from examples.rllib.figure_eight import setup_exps as figure_eight_setup
 from examples.rllib.green_wave import setup_exps as green_wave_setup
 from examples.rllib.stabilizing_highway import setup_exps as highway_setup
@@ -193,10 +192,6 @@ class TestRllibExamples(unittest.TestCase):
     def setUp(self):
         if not ray.is_initialized():
             ray.init(num_cpus=1)
-
-    def test_coop_merge(self):
-        alg_run, env_name, config = coop_setup()
-        self.run_exp(alg_run, env_name, config)
 
     def test_figure_eight(self):
         alg_run, env_name, config = figure_eight_setup()

@@ -842,7 +842,7 @@ class DesiredVelocityEnv(BottleneckEnv):
         for segment in self.obs_segments:
             num_obs += 4 * segment[1] * self.k.scenario.num_lanes(segment[0])
         num_obs += 1
-        return Box(low=0.0, high=1.0, shape=(num_obs, ), dtype=np.float32)
+        return Box(low=0.0, high=2.0, shape=(num_obs, ), dtype=np.float32)
 
     @property
     def action_space(self):
@@ -909,7 +909,6 @@ class DesiredVelocityEnv(BottleneckEnv):
                     num_vehicles[segment, lane_list[i]] += 1
 
             # normalize
-
             num_vehicles /= NUM_VEHICLE_NORM
             num_rl_vehicles /= NUM_VEHICLE_NORM
             num_vehicles_list += num_vehicles.flatten().tolist()
