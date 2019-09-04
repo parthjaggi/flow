@@ -169,6 +169,10 @@ class TrafficLightGridEnv(Env):
         # check whether the action space is meant to be discrete or continuous
         self.discrete = env_params.additional_params.get("discrete", False)
 
+        # specifies the vehicles that left the network and should be added in
+        # the next step. This is needed for sumo-1.3.1 support.
+        self._add_next_step = {}
+
     @property
     def action_space(self):
         """See class definition."""
@@ -283,6 +287,11 @@ class TrafficLightGridEnv(Env):
         """See class definition."""
         return - rewards.min_delay_unscaled(self) \
             - rewards.boolean_action_penalty(rl_actions >= 0.5, gain=1.0)
+
+    def reset(self):
+        """See parent class."""
+        self._add_next_step = {}
+        super(TrafficLightGridEnv, self).reset()
 
     # ===============================
     # ============ UTILS ============
@@ -463,16 +472,21 @@ class TrafficLightGridEnv(Env):
         if route_id is not None:
             type_id = self.k.vehicle.get_type(veh_id)
             lane_index = self.k.vehicle.get_lane(veh_id)
+            if self._add_next_step.get(veh_id, False):
+                # reintroduce it at the start of the network
+                self.k.vehicle.add(
+                    veh_id=veh_id,
+                    edge=route_id,
+                    type_id=str(type_id),
+                    lane=str(lane_index),
+                    pos="0",
+                    speed="max")
+                self._add_next_step[veh_id] = False
+
+        if route_id is not None:
             # remove the vehicle
             self.k.vehicle.remove(veh_id)
-            # reintroduce it at the start of the network
-            self.k.vehicle.add(
-                veh_id=veh_id,
-                edge=route_id,
-                type_id=str(type_id),
-                lane=str(lane_index),
-                pos="0",
-                speed="max")
+            self._add_next_step[veh_id] = True
 
     def get_closest_to_intersection(self, edges, num_closest, padding=False):
         """Return the IDs of the vehicles that are closest to an intersection.
