@@ -188,11 +188,6 @@ class TrafficLightGridEnv(Env):
     @property
     def observation_space(self):
         """See class definition."""
-        print('----------------')
-        print('----------------')
-        print('----------------')
-        print('----------------')
-        print('----------------')
         speed = Box(
             low=0,
             high=1,
