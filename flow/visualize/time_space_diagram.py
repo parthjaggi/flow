@@ -318,8 +318,8 @@ def _figure_eight(data, params, all_time):
     ring_radius = net_params.additional_params['radius_ring']
     ring_edgelen = ring_radius * np.pi / 2.
     intersection = 2 * ring_radius
-    junction = 2.9 + 3.3 * net_params.additional_params['lanes']
-    inner = 0.28
+    junction = 2.9 + 6.50 * net_params.additional_params['lanes']
+    inner = 0.1 * net_params.additional_params['lanes']
 
     # generate edge starts
     edgestarts = {

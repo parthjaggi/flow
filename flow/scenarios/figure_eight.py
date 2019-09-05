@@ -70,13 +70,8 @@ class Figure8Scenario(Scenario):
         ring_radius = net_params.additional_params["radius_ring"]
         self.ring_edgelen = ring_radius * np.pi / 2.
         self.intersection_len = 2 * ring_radius
-        self.junction_len = 2.9 + 3.3 * net_params.additional_params["lanes"]
-        self.inner_space_len = 0.28
-
-        # # instantiate "length" in net params
-        # net_params.additional_params["length"] = \
-        #     6 * self.ring_edgelen + 2 * self.intersection_len + \
-        #     2 * self.junction_len + 10 * self.inner_space_len
+        self.junction_len = 2.9 + 6.50 * net_params.additional_params['lanes']
+        self.inner_space_len = 0.1 * net_params.additional_params['lanes']
 
         super().__init__(name, vehicles, net_params, initial_config,
                          traffic_lights)
