@@ -1,10 +1,9 @@
 """Runs the environments located in flow/benchmarks.
 
 The environment file can be modified in the imports to change the environment
-this runner script is executed on. This file runs the ARS algorithm in rllib
+this runner script is executed on. This file runs the PPO algorithm in rllib
 and utilizes the hyper-parameters specified in:
-Simple random search provides a competitive approach to reinforcement learning
-by Mania et. al
+Proximal Policy Optimization Algorithms by Schulman et. al.
 """
 import json
 import argparse
@@ -22,7 +21,7 @@ from flow.utils.rllib import FlowParamsEncoder
 
 EXAMPLE_USAGE = """
 example usage:
-    python ars_runner.py grid0
+    python ppo_runner.py grid0
 Here the arguments are:
 benchmark_name - name of the benchmark to run
 num_rollouts - number of rollouts to train across
@@ -36,11 +35,11 @@ parser = argparse.ArgumentParser(
 
 # required input parameters
 parser.add_argument(
-    "--benchmark_name", type=str, help="File path to solution environment.")
+    "--upload_dir", type=str, help="S3 Bucket to upload to.")
 
 # required input parameters
 parser.add_argument(
-    "--upload_dir", type=str, help="S3 Bucket to upload to.")
+    "--benchmark_name", type=str, help="File path to solution environment.")
 
 # optional input parameters
 parser.add_argument(
@@ -54,7 +53,7 @@ parser.add_argument(
     '--num_cpus',
     type=int,
     default=2,
-    help="The number of rollouts to average over.")
+    help="The number of cpus to use.")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -64,7 +63,7 @@ if __name__ == "__main__":
     num_rollouts = args.num_rollouts
     # number of parallel workers
     num_cpus = args.num_cpus
-    # upload dir
+
     upload_dir = args.upload_dir
 
     # Import the benchmark and fetch its flow_params
@@ -75,46 +74,41 @@ if __name__ == "__main__":
     # get the env name and a creator for the environment
     create_env, env_name = make_create_env(params=flow_params, version=0)
 
-    alg_run = "ARS"
-
     # initialize a ray instance
     ray.init()
 
+    alg_run = "TD3"
+
+    horizon = flow_params["env"].horizon
     agent_cls = get_agent_class(alg_run)
     config = agent_cls._default_config.copy()
     config["num_workers"] = min(num_cpus, num_rollouts)
-    config["num_rollouts"] = num_rollouts
-    config["rollouts_used"] = num_rollouts
-    # config["sgd_stepsize"] = grid_search([.01, .02])
-    # config["noise_stdev"] = grid_search([.01, .02])
-    # optimal hyperparameters:
-    config["sgd_stepsize"] = 0.2
-    config["noise_stdev"] = 0.2
-    config['eval_prob'] = 0.05
-    config['clip_actions'] = False  # FIXME(ev) temporary ray bug
-    config['observation_filter'] = "NoFilter"
+    config["timesteps_per_iteration"] = horizon * num_rollouts
+    config["horizon"] = horizon
 
     # save the flow params for replay
     flow_json = json.dumps(
         flow_params, cls=FlowParamsEncoder, sort_keys=True, indent=4)
     config['env_config']['flow_params'] = flow_json
     config['env_config']['run'] = alg_run
+    config['clip_actions'] = False  # FIXME(ev) temporary ray bug
 
     # Register as rllib env
     register_env(env_name, create_env)
 
     exp_tag = {
-            "run": alg_run,
-            "env": env_name,
-            "config": {
-                **config
-            },
-            "checkpoint_freq": 25,
-            "max_failures": 999,
-            "stop": {"training_iteration": 500},
-            "num_samples": 1,
-            "upload_dir": "s3://"+upload_dir
-        }
+        "run": alg_run,
+        "env": env_name,
+        "config": {
+            **config
+        },
+        "checkpoint_freq": 25,
+        "max_failures": 999,
+        "stop": {
+            "training_iteration": 500
+        },
+        "num_samples": 3,
+    }
 
     if upload_dir:
         exp_tag["upload_dir"] = "s3://" + upload_dir

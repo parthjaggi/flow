@@ -56,7 +56,6 @@ parser.add_argument(
     help="The number of cpus to use.")
 
 if __name__ == "__main__":
-    benchmark_name = 'grid0'
     args = parser.parse_args()
     # benchmark name
     benchmark_name = args.benchmark_name
