@@ -133,6 +133,7 @@ class Experiment:
             std_vels.append(np.std(vel))
             outflows.append(self.env.k.vehicle.get_outflow_rate(int(500)))
             print("Round {0}, return: {1}".format(i, ret))
+        self.env.terminate()
 
         info_dict["returns"] = rets
         info_dict["velocities"] = vels

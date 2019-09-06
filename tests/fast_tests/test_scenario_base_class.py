@@ -52,7 +52,7 @@ class TestGetX(unittest.TestCase):
         # test for an edge in the lanes
         edge_1 = "bottom"
         pos_1 = 4.72
-        self.assertAlmostEqual(self.env.k.scenario.get_x(edge_1, pos_1), 5)
+        self.assertAlmostEqual(self.env.k.scenario.get_x(edge_1, pos_1), 4.82)
 
         # test for an edge in the internal links
         edge_2 = ":bottom"
@@ -85,12 +85,12 @@ class TestGetEdge(unittest.TestCase):
         # test for a position in the lanes
         x1 = 5
         self.assertTupleEqual(
-            self.env.k.scenario.get_edge(x1), ("bottom", 4.72))
+            self.env.k.scenario.get_edge(x1), ("bottom", 4.90))
 
         # test for a position in the internal links
-        x2 = 0.1
+        x2 = 0.05
         self.assertTupleEqual(
-            self.env.k.scenario.get_edge(x2), (":bottom", 0.1))
+            self.env.k.scenario.get_edge(x2), (":bottom", 0.05))
 
 
 class TestEvenStartPos(unittest.TestCase):
@@ -448,7 +448,7 @@ class TestEvenStartPosInternalLinks(unittest.TestCase):
             car_following_params=SumoCarFollowingParams(
                 min_gap=0
             ),
-            num_vehicles=15)
+            num_vehicles=14)
 
         initial_config = InitialConfig(x0=150)
 
