@@ -83,7 +83,7 @@
     "policies_to_train": [
       "av"
     ],
-    "policy_mapping_fn": "tune.function(<function setup_exps.<locals>.policy_mapping_fn at 0x7f0c4818a1e0>)"
+    "policy_mapping_fn": "tune.function(<function setup_exps.<locals>.policy_mapping_fn at 0x7fda132e6c80>)"
   },
   "num_cpus_for_driver": 1,
   "num_cpus_per_worker": 1,
