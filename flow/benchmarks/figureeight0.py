@@ -19,8 +19,8 @@ from flow.scenarios.figure_eight import ADDITIONAL_NET_PARAMS
 # time horizon of a single rollout
 HORIZON = 1500
 # actuation bound
-MAX_DECEL = 3
-MAX_ACCEL = 3
+MAX_DECEL = 1.5
+MAX_ACCEL = 1.5
 
 # We place 1 autonomous vehicle and 13 human-driven vehicles in the network
 vehicles = VehicleParams()
@@ -33,7 +33,7 @@ vehicles.add(
     car_following_params=SumoCarFollowingParams(
         speed_mode="obey_safe_speed",
         decel=10,
-        min_gap=0.1,
+        min_gap=1,
     ),
     num_vehicles=13)
 vehicles.add(
