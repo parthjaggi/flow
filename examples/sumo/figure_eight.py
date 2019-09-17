@@ -36,13 +36,15 @@ def figure_eight_example(render=None):
     vehicles = VehicleParams()
     vehicles.add(
         veh_id="idm",
-        acceleration_controller=(IDMController, {}),
+        acceleration_controller=(IDMController, {
+            "noise": 0.2,
+        }),
         lane_change_controller=(StaticLaneChanger, {}),
         routing_controller=(ContinuousRouter, {}),
         car_following_params=SumoCarFollowingParams(
             speed_mode="obey_safe_speed",
             decel=10,
-            min_gap=0.1,
+            min_gap=1,
         ),
         initial_speed=0,
         num_vehicles=14)

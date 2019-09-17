@@ -35,7 +35,9 @@ def sugiyama_example(render=None):
     vehicles = VehicleParams()
     vehicles.add(
         veh_id="idm",
-        acceleration_controller=(IDMController, {}),
+        acceleration_controller=(IDMController, {
+            "noise": 0.2
+        }),
         car_following_params=SumoCarFollowingParams(
             min_gap=0
         ),
@@ -47,7 +49,7 @@ def sugiyama_example(render=None):
     additional_net_params = ADDITIONAL_NET_PARAMS.copy()
     net_params = NetParams(additional_params=additional_net_params)
 
-    initial_config = InitialConfig(bunching=20)
+    initial_config = InitialConfig()
 
     network = RingNetwork(
         name="sugiyama",
@@ -65,4 +67,4 @@ if __name__ == "__main__":
     exp = sugiyama_example()
 
     # run for a set number of rollouts / time steps
-    exp.run(1, 1500)
+    exp.run(1, 6000)
