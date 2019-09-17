@@ -6,7 +6,7 @@ is 10%.
 
 - **Action Dimension**: (5, )
 - **Observation Dimension**: (25, )
-- **Horizon**: 750 steps
+- **Horizon**: 1500 steps
 """
 
 from copy import deepcopy
@@ -14,16 +14,19 @@ from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams, \
     InFlows, SumoCarFollowingParams
 from flow.networks.merge import ADDITIONAL_NET_PARAMS
 from flow.core.params import VehicleParams
-from flow.controllers import SimCarFollowingController, RLController
+from flow.controllers import IDMController, RLController
 
 # time horizon of a single rollout
-HORIZON = 750
+HORIZON = 1500
 # inflow rate at the highway
 FLOW_RATE = 2000
 # percent of autonomous vehicles
 RL_PENETRATION = 0.1
 # num_rl term (see ADDITIONAL_ENV_PARAMs)
 NUM_RL = 5
+# actuation bound
+MAX_DECEL = 1.5
+MAX_ACCEL = 1.5
 
 # We consider a highway network with an upstream merging lane producing
 # shockwaves
@@ -36,16 +39,21 @@ additional_net_params["pre_merge_length"] = 500
 vehicles = VehicleParams()
 vehicles.add(
     veh_id="human",
-    acceleration_controller=(SimCarFollowingController, {}),
+    acceleration_controller=(IDMController, {
+        "noise": 0.2
+    }),
     car_following_params=SumoCarFollowingParams(
-        speed_mode=9,
+        speed_mode="obey_safe_speed",
+        min_gap=0.5,
     ),
     num_vehicles=5)
 vehicles.add(
     veh_id="rl",
     acceleration_controller=(RLController, {}),
     car_following_params=SumoCarFollowingParams(
-        speed_mode=9,
+        speed_mode="obey_safe_speed",
+        accel=MAX_ACCEL,
+        decel=MAX_DECEL,
     ),
     num_vehicles=0)
 
@@ -87,18 +95,18 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         restart_instance=True,
-        sim_step=0.5,
+        sim_step=0.2,
         render=False,
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
     env=EnvParams(
         horizon=HORIZON,
-        sims_per_step=2,
+        sims_per_step=5,
         warmup_steps=0,
         additional_params={
-            "max_accel": 1.5,
-            "max_decel": 1.5,
+            "max_accel": MAX_ACCEL,
+            "max_decel": MAX_DECEL,
             "target_velocity": 20,
             "num_rl": NUM_RL,
         },

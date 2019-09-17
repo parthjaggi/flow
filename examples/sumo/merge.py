@@ -49,6 +49,7 @@ def merge_example(render=None):
         }),
         car_following_params=SumoCarFollowingParams(
             speed_mode="obey_safe_speed",
+            min_gap=0.5,
         ),
         num_vehicles=5)
 
@@ -97,4 +98,4 @@ if __name__ == "__main__":
     exp = merge_example()
 
     # run for a set number of rollouts / time steps
-    exp.run(1, 3600, convert_to_csv=False)
+    exp.run(1, 3600, convert_to_csv=True)
