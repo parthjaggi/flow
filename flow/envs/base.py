@@ -142,6 +142,7 @@ class Env(gym.Env):
         self.initial_state = {}
         self.state = None
         self.obs_var_labels = []
+        self.warmup_steps = None
 
         # simulation step size
         self.sim_step = sim_params.sim_step
@@ -387,8 +388,8 @@ class Env(gym.Env):
 
         # test if the environment should terminate due to a collision or the
         # time horizon being met
-        done = (self.time_counter >= self.env_params.warmup_steps +
-                self.env_params.horizon)  # or crash
+        done = (self.time_counter >= self.warmup_steps +
+                self.env_params.horizon) or crash
 
         # compute the info for each agent
         infos = {}
@@ -535,7 +536,13 @@ class Env(gym.Env):
         observation = np.copy(states)
 
         # perform (optional) warm-up steps before training
-        for _ in range(self.env_params.warmup_steps):
+        if isinstance(self.env_params.warmup_steps, tuple):
+            min_val, max_val = self.env_params.warmup_steps
+            self.warmup_steps = random.uniform(min_val, max_val)
+        else:
+            self.warmup_steps = self.env_params.warmup_steps
+
+        for _ in range(self.warmup_steps):
             observation, _, _, _ = self.step(rl_actions=None)
 
         # render a frame

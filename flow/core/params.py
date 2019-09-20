@@ -603,11 +603,14 @@ class EnvParams:
         environment configuration
     horizon : int, optional
         number of steps per rollouts
-    warmup_steps : int, optional
+    warmup_steps : int or (int, int), optional
         number of steps performed before the initialization of training
         during a rollout. These warmup steps are not added as steps
         into training, and the actions of rl agents during these steps
-        are dictated by sumo. Defaults to zero
+        are dictated by sumo. Defaults to zero. If set to a tuple of two
+        interger values, then these values represent the min and max warmup
+        step values, and a random values between these two values is sampled
+        upon every reset and used as the warmup steps value.
     sims_per_step : int, optional
         number of sumo simulation steps performed in any given rollout
         step. RL agents perform the same action for the duration of

@@ -197,8 +197,7 @@ class MultiEnv(MultiAgentEnv, Env):
 
         # reintroduce the initial vehicles to the network
         for veh_id in self.initial_ids:
-            type_id, edge, lane_index, pos, speed = \
-                self.initial_state[veh_id]
+            type_id, edge, lane_index, pos, speed = self.initial_state[veh_id]
 
             try:
                 self.k.vehicle.add(
@@ -243,7 +242,13 @@ class MultiEnv(MultiAgentEnv, Env):
             raise FatalFlowError(msg=msg)
 
         # perform (optional) warm-up steps before training
-        for _ in range(self.env_params.warmup_steps):
+        if isinstance(self.env_params.warmup_steps, tuple):
+            min_val, max_val = self.env_params.warmup_steps
+            warmup_steps = random.uniform(min_val, max_val)
+        else:
+            warmup_steps = self.env_params.warmup_steps
+
+        for _ in range(warmup_steps):
             observation, _, _, _ = self.step(rl_actions=None)
 
         # render a frame

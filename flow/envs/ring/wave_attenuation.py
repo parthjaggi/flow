@@ -27,6 +27,9 @@ ADDITIONAL_ENV_PARAMS = {
     # bounds on the ranges of ring road lengths the autonomous vehicle is
     # trained on
     'ring_length': [220, 270],
+    # specifies whether to include a penalty for acceleration by the AV to the
+    # reward function
+    "penalize_accelerations": True,
 }
 
 
@@ -60,6 +63,8 @@ class WaveAttenuationEnv(Env):
     * ring_length: bounds on the ranges of ring road lengths the autonomous
       vehicle is trained on. If set to None, the environment sticks to the ring
       road specified in the original network definition.
+    * penalize_accelerations: specifies whether to include a penalty for
+      acceleration by the AV to the reward function
 
     States
         The state consists of the velocities and absolute position of all
@@ -129,12 +134,13 @@ class WaveAttenuationEnv(Env):
         reward = eta_2 * np.mean(vel) / 20
 
         # punish accelerations (should lead to reduced stop-and-go waves)
-        eta = 4  # 0.25
-        mean_actions = np.mean(np.abs(np.array(rl_actions)))
-        accel_threshold = 0
+        if self.env_params.additional_params['penalize_accelerations']:
+            eta = 4  # 0.25
+            mean_actions = np.mean(np.abs(np.array(rl_actions)))
+            accel_threshold = 0
 
-        if mean_actions > accel_threshold:
-            reward += eta * (accel_threshold - mean_actions)
+            if mean_actions > accel_threshold:
+                reward += eta * (accel_threshold - mean_actions)
 
         return float(reward)
 
