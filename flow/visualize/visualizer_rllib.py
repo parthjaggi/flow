@@ -177,8 +177,7 @@ def visualizer_rllib(args):
             size = config['model']['lstm_cell_size']
             for key in config['multiagent']['policies'].keys():
                 state_init[key] = [np.zeros(size, np.float32),
-                                   np.zeros(size, np.float32)
-                                   ]
+                                   np.zeros(size, np.float32)]
         else:
             state_init = [
                 np.zeros(config['model']['lstm_cell_size'], np.float32),
