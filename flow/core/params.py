@@ -1213,11 +1213,27 @@ class DetectorParams:
     """
 
     def __init__(self):
-        """Instantiate Inflows."""
-        self.__flows = []
+        """Instantiate Detectors."""
+        self.__detectors = []
 
-    def add_induction_loop_detector(self, det_params):
-        pass
+    def add_induction_loop_detector(
+        self, id, lane_id, position, frequency, storage_file=None, friendlyPos=False
+    ):
+        """Docstring
+        """
+        new_detector = {
+            "id": id,
+            "lane": lane_id,
+            "pos": position,
+            "freq": frequency,
+            # "file": storage_file,
+            "friendlyPos": friendlyPos,
+        }
+        self.__detectors.append(new_detector)
 
     def add_lane_area_detector(self, det_params):
         pass
+
+    def get(self):
+        """Return all the detectors."""
+        return self.__detectors

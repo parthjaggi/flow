@@ -4,7 +4,7 @@ from flow.core.kernel.simulation import KernelSimulation
 from flow.core.util import ensure_dir
 import flow.config as config
 import traci.constants as tc
-import libsumo
+# import libsumo
 import traci
 import traceback
 import os
@@ -155,28 +155,32 @@ class TraCISimulation(KernelSimulation):
                 else:
                     time.sleep(config.SUMO_SLEEP)
 
-                if sim_params.render:
-                    # Opening the I/O thread to SUMO
-                    self.sumo_proc = subprocess.Popen(
-                        sumo_call, preexec_fn=os.setsid)
+                traci_connection = traci.connect(port, numRetries=100)
+                traci_connection.setOrder(0)
+                traci_connection.simulationStep()
 
-                    # wait a small period of time for the subprocess to
-                    # activate before trying to connect with traci
-                    if os.environ.get("TEST_FLAG", 0):
-                        time.sleep(0.1)
-                    else:
-                        time.sleep(config.SUMO_SLEEP)
+                # if sim_params.render:
+                #     # Opening the I/O thread to SUMO
+                #     self.sumo_proc = subprocess.Popen(
+                #         sumo_call, preexec_fn=os.setsid)
 
-                    traci_connection = traci.connect(port, numRetries=100)
-                    traci_connection.setOrder(0)
-                    traci_connection.simulationStep()
-                else:
-                    # Use libsumo to create a simulation instance.
-                    libsumo.start(sumo_call[1:3])
-                    libsumo.simulationStep()
+                #     # wait a small period of time for the subprocess to
+                #     # activate before trying to connect with traci
+                #     if os.environ.get("TEST_FLAG", 0):
+                #         time.sleep(0.1)
+                #     else:
+                #         time.sleep(config.SUMO_SLEEP)
 
-                    # libsumo will act as the kernel API
-                    traci_connection = libsumo
+                #     traci_connection = traci.connect(port, numRetries=100)
+                #     traci_connection.setOrder(0)
+                #     traci_connection.simulationStep()
+                # else:
+                #     # Use libsumo to create a simulation instance.
+                #     libsumo.start(sumo_call[1:3])
+                #     libsumo.simulationStep()
+
+                #     # libsumo will act as the kernel API
+                #     traci_connection = libsumo
 
                 return traci_connection
                 
