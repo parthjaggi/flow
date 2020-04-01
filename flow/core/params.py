@@ -1206,3 +1206,18 @@ class InFlows:
     def get(self):
         """Return the inflows of each edge."""
         return self.__flows
+
+
+class DetectorParams:
+    """DocString
+    """
+
+    def __init__(self):
+        """Instantiate Inflows."""
+        self.__flows = []
+
+    def add_induction_loop_detector(self, det_params):
+        pass
+
+    def add_lane_area_detector(self, det_params):
+        pass
