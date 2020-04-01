@@ -1204,3 +1204,42 @@ class InFlows:
     def get(self):
         """Return the inflows of each edge."""
         return self.__flows
+
+
+class DetectorParams:
+    """DocString
+    """
+
+    def __init__(self):
+        """Instantiate Detectors."""
+        self.__detectors = []
+
+    def add_induction_loop_detector(
+        self,
+        name,
+        lane_id,
+        position,
+        frequency,
+        storage_file='out.xml',
+        friendly_position=False,
+    ):
+        """Docstring
+        pos on lane can be negative as well. 
+        """
+        detector = {
+            'id': name,
+            'lane': lane_id,
+            'pos': str(position),
+            'freq': str(frequency),
+            'file': storage_file,
+            'friendlyPos': str(friendly_position).lower(),
+            'type': 'inductionLoop',
+        }
+        self.__detectors.append(detector)
+
+    def add_lane_area_detector(self, det_params):
+        pass
+
+    def get(self):
+        """Return all the detectors."""
+        return self.__detectors

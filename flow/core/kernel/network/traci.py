@@ -205,7 +205,8 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         # create the sumo configuration files
         cfg_name = self.generate_cfg(self.network.net_params,
                                      self.network.traffic_lights,
-                                     self.network.routes)
+                                     self.network.routes,
+                                     self.network.detector_params)
 
         # specify the location of the sumo configuration file
         self.cfg = self.cfg_path + cfg_name
@@ -614,7 +615,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
 
         return edges_dict, conn_dict
 
-    def generate_cfg(self, net_params, traffic_lights, routes):
+    def generate_cfg(self, net_params, traffic_lights, routes, detector_params):
         """Generate .sumo.cfg files using net files and netconvert.
 
         This method is responsible for creating the following config files:
@@ -723,6 +724,17 @@ class TraCIKernelNetwork(BaseKernelNetwork):
                                 }))
 
                     add.append(e)
+
+        # add (optionally) detectors to the .add.xml file
+        detectors = detector_params.get()
+        if detectors:
+            for detector in detectors:
+                detector_params = deepcopy(detector)
+
+                detector_type = detector['type']
+                del detector_params['type']
+
+                add.append(E(detector_type, **detector_params))
 
         printxml(add, self.cfg_path + self.addfn)
 

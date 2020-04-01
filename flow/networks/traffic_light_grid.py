@@ -3,6 +3,7 @@
 from flow.networks.base import Network
 from flow.core.params import InitialConfig
 from flow.core.params import TrafficLightParams
+from flow.core.params import DetectorParams
 from collections import defaultdict
 import numpy as np
 
@@ -105,12 +106,15 @@ class TrafficLightGridNetwork(Network):
     >>> )
     """
 
-    def __init__(self,
-                 name,
-                 vehicles,
-                 net_params,
-                 initial_config=InitialConfig(),
-                 traffic_lights=TrafficLightParams()):
+    def __init__(
+        self,
+        name,
+        vehicles,
+        net_params,
+        initial_config=InitialConfig(),
+        traffic_lights=TrafficLightParams(),
+        detector_params=DetectorParams(),
+    ):
         """Initialize an n*m traffic light grid network."""
         optional = ["tl_logic"]
         for p in ADDITIONAL_NET_PARAMS.keys():
@@ -160,8 +164,9 @@ class TrafficLightGridNetwork(Network):
         # name of the network (DO NOT CHANGE)
         self.name = "BobLoblawsLawBlog"
 
-        super().__init__(name, vehicles, net_params, initial_config,
-                         traffic_lights)
+        super().__init__(
+            name, vehicles, net_params, initial_config, traffic_lights, detector_params
+        )
 
     def specify_nodes(self, net_params):
         """See parent class."""

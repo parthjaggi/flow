@@ -4,6 +4,7 @@ from flow.core.params import InitialConfig
 from flow.core.params import TrafficLightParams
 from flow.core.params import SumoCarFollowingParams
 from flow.core.params import SumoLaneChangeParams
+from flow.core.params import DetectorParams
 import time
 import xml.etree.ElementTree as ElementTree
 from lxml import etree
@@ -311,7 +312,8 @@ class Network(object):
                  vehicles,
                  net_params,
                  initial_config=InitialConfig(),
-                 traffic_lights=TrafficLightParams()):
+                 traffic_lights=TrafficLightParams(),
+                 detector_params=DetectorParams()):
         """Instantiate the base network class.
 
         Attributes
@@ -334,6 +336,7 @@ class Network(object):
         self.net_params = net_params
         self.initial_config = initial_config
         self.traffic_lights = traffic_lights
+        self.detector_params = detector_params
 
         # specify routes vehicles can take
         self.routes = self.specify_routes(net_params)
