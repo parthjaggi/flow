@@ -43,7 +43,7 @@ class KernelDetector(object):
         """
         raise NotImplementedError
 
-    def get_occupany(self, detector_id):
+    def get_occupancy(self, detector_id):
         """DocString
         """
         raise NotImplementedError

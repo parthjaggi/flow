@@ -86,7 +86,7 @@ class TraCIDetector(KernelDetector):
         """See parent class."""
         return self.kernel_api.inductionloop.getLastStepVehicleIDs(detector_id)
 
-    def get_occupany(self, detector_id):
+    def get_occupancy(self, detector_id):
         """See parent class."""
         return self.kernel_api.inductionloop.getLastStepOccupancy(detector_id)
 
