@@ -726,7 +726,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
                     add.append(e)
 
         # add (optionally) detectors to the .add.xml file
-        detectors = detector_params.get()
+        detectors = detector_params.get(self.network)
         if detectors:
             for detector in detectors:
                 detector_params = deepcopy(detector)

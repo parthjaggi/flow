@@ -1213,6 +1213,7 @@ class DetectorParams:
     def __init__(self):
         """Instantiate Detectors."""
         self.__detectors = []
+        self.__pending_detectors = []
 
     def add_induction_loop_detector(
         self,
@@ -1237,9 +1238,62 @@ class DetectorParams:
         }
         self.__detectors.append(detector)
 
-    def add_lane_area_detector(self, det_params):
-        pass
+    def add_induction_loop_detectors_to_lane(self, *args, **kwargs):
+        """Docstring
+        network: instance of Network: flow/networks/base.py.
+        positions on node_id can be negative as well. 
+        positions can be an array. 
+        """
+        detector_params = {'args': args, **kwargs}
+        self.__pending_detectors.append(detector_params)
 
-    def get(self):
+    def _add_induction_loop_detectors_to_lane(
+        self,
+        name,
+        node_id,
+        positions,
+        frequency,
+        network=None,
+        storage_file='out.xml',
+        friendly_position=False,
+    ):
+        """Docstring
+        network: instance of Network: flow/networks/base.py.
+        positions on node_id can be negative as well. 
+        positions can be an array. 
+        """
+
+        assert network is not None, 'Network cannot be None.'
+
+        connections = network.connections[node_id]
+        incoming_lanes = list(set([f"{c['from']}_{c['fromLane']}" for c in connections]))
+        counter = 0
+
+        for lane_id in incoming_lanes:
+            for position in positions:
+                detector = {
+                    'id': f'{name}_{counter}',
+                    'lane': lane_id,
+                    'pos': str(position),
+                    'freq': str(frequency),
+                    'file': storage_file,
+                    'friendlyPos': str(friendly_position).lower(),
+                    'type': 'inductionLoop',
+                }
+                counter += 1
+                self.__detectors.append(detector)
+
+    def add_lane_area_detector(self, det_params):
+        raise NotImplementedError
+
+    def get(self, network):
         """Return all the detectors."""
+        # create pending detectors
+        for detector_params in self.__pending_detectors:
+            args = detector_params['args']
+            del detector_params['args']
+            self._add_induction_loop_detectors_to_lane(
+                *args, **detector_params, network=network
+            )
+        self.__pending_detectors = []
         return self.__detectors
