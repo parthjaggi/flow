@@ -1238,7 +1238,7 @@ class DetectorParams:
         }
         self.__detectors.append(detector)
 
-    def add_induction_loop_detectors_to_lane(self, *args, **kwargs):
+    def add_induction_loop_detectors_to_intersection(self, *args, **kwargs):
         """Docstring
         network: instance of Network: flow/networks/base.py.
         positions on node_id can be negative as well. 
@@ -1247,7 +1247,7 @@ class DetectorParams:
         detector_params = {'args': args, **kwargs}
         self.__pending_detectors.append(detector_params)
 
-    def _add_induction_loop_detectors_to_lane(
+    def _add_induction_loop_detectors_to_intersection(
         self,
         name,
         node_id,
@@ -1292,7 +1292,7 @@ class DetectorParams:
         for detector_params in self.__pending_detectors:
             args = detector_params['args']
             del detector_params['args']
-            self._add_induction_loop_detectors_to_lane(
+            self._add_induction_loop_detectors_to_intersection(
                 *args, **detector_params, network=network
             )
         self.__pending_detectors = []
