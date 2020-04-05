@@ -153,6 +153,14 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         self._junction_list = list(
             set(self._edges.keys()) - set(self._edge_list))
 
+        # create edge lane mapping with key: edge_id and value: list of lane_ids
+        self._edge_lane_mapping = {
+            edge_id: [f'{edge_id}_{i}' for i in range(self._edges[edge_id]['lanes'])] for edge_id in self._edge_list
+        }
+
+        # list of lanes
+        self._lane_list = sum([lane_list for lane_list in self._edge_lane_mapping.values()], [])
+
         # maximum achievable speed on any edge in the network
         self.__max_speed = max(
             self.speed_limit(edge) for edge in self.get_edge_list())
@@ -311,6 +319,14 @@ class TraCIKernelNetwork(BaseKernelNetwork):
     def get_edge_list(self):
         """See parent class."""
         return self._edge_list
+
+    def get_edge_lane_mapping(self):
+        """See parent class."""
+        return self._edge_lane_mapping
+
+    def get_lane_list(self):
+        """See parent class."""
+        return self._lane_list
 
     def get_junction_list(self):
         """See parent class."""

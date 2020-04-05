@@ -264,6 +264,13 @@ class KernelVehicle(object):
         """
         raise NotImplementedError
 
+    def get_ids_by_lane(self, edges):
+        """Return the names of all vehicles in the specified lane.
+
+        If no vehicles are currently in the lane, then returns an empty list.
+        """
+        raise NotImplementedError
+
     def get_inflow_rate(self, time_span):
         """Return the inflow rate (in veh/hr) of vehicles from the network.
 

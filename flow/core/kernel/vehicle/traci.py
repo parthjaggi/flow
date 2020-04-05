@@ -66,6 +66,9 @@ class TraCIVehicle(KernelVehicle):
         # list of vehicle ids located in each edge in the network
         self._ids_by_edge = dict()
 
+        # list of vehicle ids located in each lane in the network
+        self._ids_by_lane = dict()
+
         # number of vehicles that entered the network for every time-step
         self._num_departed = []
         self._departed_ids = []
@@ -481,6 +484,12 @@ class TraCIVehicle(KernelVehicle):
             return sum([self.get_ids_by_edge(edge) for edge in edges], [])
         return self._ids_by_edge.get(edges, []) or []
 
+    def get_ids_by_lane(self, lanes):
+        """See parent class."""
+        if isinstance(lanes, (list, np.ndarray)):
+            return sum([self.get_ids_by_lane(lane) for lane in lanes], [])
+        return self._ids_by_lane.get(lanes, []) or []
+
     def get_inflow_rate(self, time_span):
         """See parent class."""
         if len(self._num_departed) == 0:
@@ -695,6 +704,7 @@ class TraCIVehicle(KernelVehicle):
         vehicles in the network.
         """
         edge_list = self.master_kernel.network.get_edge_list()
+        lane_list = self.master_kernel.network.get_lane_list()
         junction_list = self.master_kernel.network.get_junction_list()
         tot_list = edge_list + junction_list
         num_edges = (len(self.master_kernel.network.get_edge_list()) + len(
@@ -743,6 +753,7 @@ class TraCIVehicle(KernelVehicle):
                 self.set_lane_followers(veh_id, followers)
 
         self._ids_by_edge = dict().fromkeys(edge_list)
+        self._ids_by_lane = dict().fromkeys(lane_list)
 
         for edge_id in edge_dict:
             edges = list(itertools.chain.from_iterable(edge_dict[edge_id]))
@@ -752,6 +763,15 @@ class TraCIVehicle(KernelVehicle):
                 self._ids_by_edge[edge_id] = list(edges)
             else:
                 self._ids_by_edge[edge_id] = []
+
+            # create lane and vehicle ids mapping
+            for lane_id, veh_list in enumerate(edge_dict[edge_id]):
+                lane = f'{edge_id}_{lane_id}'
+                if len(veh_list) > 0:
+                    veh_ids, _ = zip(*veh_list)
+                    self._ids_by_lane[lane] = list(veh_ids)
+                else:
+                    self._ids_by_lane[lane] = []
 
     def _multi_lane_headways_util(self, veh_id, edge_dict, num_edges):
         """Compute multi-lane data for the specified vehicle.

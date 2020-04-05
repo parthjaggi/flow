@@ -150,6 +150,17 @@ class BaseKernelNetwork(object):
         """Return the names of all edges in the network."""
         raise NotImplementedError
 
+    def get_edge_lane_mapping(self):
+        """Return the mapping of edges and lanes in the network.
+
+        Dictionary is returned with key being edge_id and list of lane_ids as value. 
+        """
+        raise NotImplementedError
+
+    def get_lane_list(self):
+        """Return the names of all lanes in the network."""
+        raise NotImplementedError
+
     def get_junction_list(self):
         """Return the names of all junctions in the network."""
         raise NotImplementedError
