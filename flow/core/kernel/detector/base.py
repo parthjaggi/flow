@@ -28,6 +28,11 @@ class KernelDetector(object):
         """
         raise NotImplementedError
 
+    def get_detectors_at_lane(self, detector_id):
+        """DocString
+        """
+        raise NotImplementedError
+
     def get_number_of_entered_vehicles(self, detector_id):
         """DocString
         """

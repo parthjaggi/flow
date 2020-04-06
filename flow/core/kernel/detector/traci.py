@@ -74,6 +74,15 @@ class TraCIDetector(KernelDetector):
         """See parent class."""
         return self.__ids
 
+    def get_detectors_at_lane(self, lane_id):
+        """See parent class."""
+        detectors = {}
+        for detector_id, info in self.__detector_infos.items():
+            if lane_id == info['lane_id']:
+                detectors[detector_id] = info['position']
+
+        return detectors
+
     def get_number_of_entered_vehicles(self, detector_id):
         """See parent class."""
         return self.kernel_api.inductionloop.getLastStepVehicleNumber(detector_id)
