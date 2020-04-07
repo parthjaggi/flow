@@ -84,6 +84,7 @@ def make_create_env(params, version=0, render=None):
 
     env_params = params['env']
     net_params = params['net']
+    detector_params = params['detector_params']
     initial_config = params.get('initial', InitialConfig())
     traffic_lights = params.get("tls", TrafficLightParams())
 
@@ -97,6 +98,7 @@ def make_create_env(params, version=0, render=None):
             net_params=net_params,
             initial_config=initial_config,
             traffic_lights=traffic_lights,
+            detector_params=detector_params
         )
 
         # accept new render type if not set to None
