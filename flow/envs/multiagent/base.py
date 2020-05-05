@@ -129,7 +129,7 @@ class MultiEnv(MultiAgentEnv, Env):
 
         return states, reward, done, infos
 
-    def reset(self, new_inflow_rate=None):
+    def reset(self, new_inflow_rate=None, perform_extra_work=None):
         """Reset the environment.
 
         This method is performed in between rollouts. It resets the state of
@@ -234,6 +234,11 @@ class MultiEnv(MultiAgentEnv, Env):
                     lane=lane_index,
                     pos=pos,
                     speed=speed)
+
+
+        # TODO [nicolas added this]
+        if perform_extra_work:
+            perform_extra_work()
 
         # advance the simulation in the simulator by one step
         self.k.simulation.simulation_step()
