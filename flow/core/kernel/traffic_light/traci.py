@@ -74,3 +74,15 @@ class TraCITrafficLight(KernelTrafficLight):
     def get_state(self, node_id):
         """See parent class."""
         return self.__tls[node_id][tc.TL_RED_YELLOW_GREEN_STATE]
+
+    def set_cycle_logic(self, node_id, cycle_phases):
+        from traci._trafficlight import Phase, Logic
+        phases = []
+        for phase in cycle_phases:
+            phases.append(Phase(duration=phase["duration"], state=phase["state"], next=tuple()))
+        # TODO: programID may need to be dynamic
+        logic = Logic(programID='0', type=0, currentPhaseIndex=0, phases=phases)
+        print("=====================================================================")
+        self.kernel_api.trafficlight.setProgramLogic(node_id, logic)
+        print("================= successfully setted tl logic ======================")
+        
