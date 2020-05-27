@@ -79,10 +79,9 @@ class TraCITrafficLight(KernelTrafficLight):
         from traci._trafficlight import Phase, Logic
         phases = []
         for phase in cycle_phases:
-            phases.append(Phase(duration=phase["duration"], state=phase["state"], next=tuple()))
+            phases.append(Phase(duration=phase["duration"], state=phase["state"]))
         # TODO: programID may need to be dynamic
         logic = Logic(programID='0', type=0, currentPhaseIndex=0, phases=phases)
-        print("=====================================================================")
-        self.kernel_api.trafficlight.setProgramLogic(node_id, logic)
-        print("================= successfully setted tl logic ======================")
+        self.kernel_api.trafficlight.setCompleteRedYellowGreenDefinition(node_id, logic)
+        self.kernel_api.trafficlight.setProgram(node_id, '0')
         
