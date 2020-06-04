@@ -84,4 +84,6 @@ class TraCITrafficLight(KernelTrafficLight):
         logic = Logic(programID='0', type=0, currentPhaseIndex=0, phases=phases)
         self.kernel_api.trafficlight.setCompleteRedYellowGreenDefinition(node_id, logic)
         self.kernel_api.trafficlight.setProgram(node_id, '0')
+        self.kernel_api.trafficlight.setPhase(node_id, 0)
+        self.kernel_api.trafficlight.setPhaseDuration(node_id, phases[0].duration)
         
