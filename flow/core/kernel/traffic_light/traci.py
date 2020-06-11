@@ -86,4 +86,39 @@ class TraCITrafficLight(KernelTrafficLight):
         self.kernel_api.trafficlight.setProgram(node_id, '0')
         self.kernel_api.trafficlight.setPhase(node_id, 0)
         self.kernel_api.trafficlight.setPhaseDuration(node_id, phases[0].duration)
+
+    def get_incoming_lanes(self, node_id: str):
+        """
+        Returns incoming (or controlled) lanes for the given intersection.
+        Removes duplicates in case some lanes used for multiple movements.
+
+        Args:
+            node_id (str): Intersection ID
+        """
+        lanes = list(dict.fromkeys(self.kernel_api.trafficlight.getControlledLanes(node_id)))
+        return lanes
+
+    def get_incoming_edges(self, node_id: str):
+        """
+        Returns incoming (or controlled) edges for the given intersection.
+
+        Args:
+            node_id (str): Intersection ID
+        """
+        lanes = self.kernel_api.trafficlight.getControlledLanes(node_id)
+        edges = self._get_edges_from_lanes(lanes)
+        return edges
+
+    def _get_edges_from_lanes(self, lanes):
+        """
+        Convert lanes (iterable) to edges (iterable).
+        Remove lane index from the end and then remove duplicates while retaining order.
+        
+        >>> lanes
+        >>> ['1175109_0', '1175109_1', '1175109_2', '1183934_0', '1183934_1', '1183934_2']
+
+        >>> self._get_edges_from_lanes(lanes)
+        >>> {'1175109', '1183934'}
+        """
+        return list(dict.fromkeys(map(lambda x: x.rsplit('_', 1)[0], lanes)))
         

@@ -16,6 +16,8 @@ DEFAULT_PROBABILITY = 0
 DEFAULT_LENGTH = 5
 # default sumo vehicle class class TODO (ak): remove
 DEFAULT_VCLASS = 0
+# default deviation of the speedFactor
+DEFAULT_SPEEDDEV = 0.1
 
 
 class Network(object):
@@ -772,9 +774,8 @@ class Network(object):
                     'length': vtype.attrib.get('length', DEFAULT_LENGTH),
                     'minGap': vtype.attrib['minGap'],
                     'maxSpeed': vtype.attrib['maxSpeed'],
-                    'probability': vtype.attrib.get(
-                        'probability', DEFAULT_PROBABILITY),
-                    'speedDev': vtype.attrib['speedDev']
+                    'probability': vtype.attrib.get('probability', DEFAULT_PROBABILITY),
+                    'speedDev': vtype.attrib.get('speedDev', DEFAULT_SPEEDDEV)
                 }
 
         return veh_type
