@@ -376,6 +376,25 @@ class Network(object):
                 # vehicles to be added with different departure times
                 self.template_vehicles = veh
 
+            if 'add' in net_params.template:
+                e1Detectors, e2Detectors = self._get_detector_params(net_params.template['add'])
+                for e1Detector in e1Detectors:
+                    self.detector_params.add_induction_loop_detector(
+                        name=e1Detector['id'],
+                        lane_id=e1Detector['lane'],
+                        position=e1Detector['pos'],
+                        frequency=e1Detector['freq'],
+                        storage_file=e1Detector['file'],
+                    )
+                for e2Detector in e2Detectors:
+                    self.detector_params.add_lane_area_detector(
+                        name=e2Detector['id'],
+                        lane_id=e2Detector['lane'],
+                        position=e2Detector['pos'],
+                        frequency=e2Detector['freq'],
+                        storage_file=e2Detector['file'],
+                    )
+
             self.types = None
             self.nodes = None
             self.edges = None
@@ -808,6 +827,15 @@ class Network(object):
             ret[typ] = SumoLaneChangeParams(lane_change_mode=1621)
 
         return ret
+
+    @staticmethod
+    def _get_detector_params(filename):
+        parser = etree.XMLParser(recover=True)
+        tree = ElementTree.parse(filename, parser=parser)
+        root = tree.getroot()
+        e1Detectors = list(map(lambda x: x.attrib, root.findall('e1Detector')))
+        e2Detectors = list(map(lambda x: x.attrib, root.findall('e2Detector')))
+        return e1Detectors, e2Detectors
 
     def __str__(self):
         """Return the name of the network and the number of vehicles."""
