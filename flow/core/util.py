@@ -97,3 +97,20 @@ def emission_to_csv(emission_path, output_path=None):
         dict_writer = csv.DictWriter(output_file, keys)
         dict_writer.writeheader()
         dict_writer.writerows(out_data)
+
+
+def convert_lanes_to_edges(lanes):
+    """
+    Convert lanes (iterable) to edges (iterable).
+    Remove lane index from the end and then remove duplicates while retaining order.
+    Also works with single lane str.
+    
+    >>> lanes
+    >>> ['1175109_0', '1175109_1', '1175109_2', '1183934_0', '1183934_1', '1183934_2']
+
+    >>> self._get_edges_from_lanes(lanes)
+    >>> {'1175109', '1183934'}
+    """
+    if isinstance(lanes, str):
+        return lanes.rsplit('_', 1)[0]
+    return list(dict.fromkeys(map(lambda x: x.rsplit('_', 1)[0], lanes)))

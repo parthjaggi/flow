@@ -2,6 +2,7 @@
 import traceback
 
 from flow.core.kernel.detector import KernelDetector
+from flow.core.util import convert_lanes_to_edges
 
 # TODO: see use of these exceptions
 from traci.exceptions import FatalTraCIError, TraCIException
@@ -74,13 +75,21 @@ class TraCIDetector(KernelDetector):
         """See parent class."""
         return self.__ids
 
-    def get_detectors_at_lane(self, lane_id):
+    def get_detectors_on_lane(self, lane_id):
         """See parent class."""
         detectors = {}
         for detector_id, info in self.__detector_infos.items():
             if lane_id == info['lane_id']:
                 detectors[detector_id] = info['position']
 
+        return detectors
+        
+    def get_detectors_on_edge(self, edge_id):
+        """See parent class."""
+        detectors = []
+        for detector_id, info in self.__detector_infos.items():
+            if edge_id == convert_lanes_to_edges(info['lane_id']):
+                detectors.append({'id': detector_id, **info})
         return detectors
 
     def get_number_of_entered_vehicles(self, detector_id):

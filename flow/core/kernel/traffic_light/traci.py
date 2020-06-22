@@ -1,6 +1,7 @@
 """Script containing the TraCI traffic light kernel class."""
 
 from flow.core.kernel.traffic_light import KernelTrafficLight
+from flow.core.util import convert_lanes_to_edges
 import traci.constants as tc
 
 
@@ -106,19 +107,6 @@ class TraCITrafficLight(KernelTrafficLight):
             node_id (str): Intersection ID
         """
         lanes = self.kernel_api.trafficlight.getControlledLanes(node_id)
-        edges = self._get_edges_from_lanes(lanes)
+        edges = convert_lanes_to_edges(lanes)
         return edges
-
-    def _get_edges_from_lanes(self, lanes):
-        """
-        Convert lanes (iterable) to edges (iterable).
-        Remove lane index from the end and then remove duplicates while retaining order.
-        
-        >>> lanes
-        >>> ['1175109_0', '1175109_1', '1175109_2', '1183934_0', '1183934_1', '1183934_2']
-
-        >>> self._get_edges_from_lanes(lanes)
-        >>> {'1175109', '1183934'}
-        """
-        return list(dict.fromkeys(map(lambda x: x.rsplit('_', 1)[0], lanes)))
         
