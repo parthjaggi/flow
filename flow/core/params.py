@@ -1201,6 +1201,9 @@ class InFlows:
 
         self.__flows.append(new_inflow)
 
+    def sort(self, key):
+        self.__flows.sort(key=key)
+
     def get(self):
         """Return the inflows of each edge."""
         return self.__flows
