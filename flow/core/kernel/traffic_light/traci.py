@@ -1,6 +1,7 @@
 """Script containing the TraCI traffic light kernel class."""
 
 from flow.core.kernel.traffic_light import KernelTrafficLight
+from flow.core.util import convert_lanes_to_edges
 import traci.constants as tc
 
 
@@ -86,4 +87,26 @@ class TraCITrafficLight(KernelTrafficLight):
         self.kernel_api.trafficlight.setProgram(node_id, '0')
         self.kernel_api.trafficlight.setPhase(node_id, 0)
         self.kernel_api.trafficlight.setPhaseDuration(node_id, phases[0].duration)
+
+    def get_incoming_lanes(self, node_id: str):
+        """
+        Returns incoming (or controlled) lanes for the given intersection.
+        Removes duplicates in case some lanes used for multiple movements.
+
+        Args:
+            node_id (str): Intersection ID
+        """
+        lanes = list(dict.fromkeys(self.kernel_api.trafficlight.getControlledLanes(node_id)))
+        return lanes
+
+    def get_incoming_edges(self, node_id: str):
+        """
+        Returns incoming (or controlled) edges for the given intersection.
+
+        Args:
+            node_id (str): Intersection ID
+        """
+        lanes = self.kernel_api.trafficlight.getControlledLanes(node_id)
+        edges = convert_lanes_to_edges(lanes)
+        return edges
         

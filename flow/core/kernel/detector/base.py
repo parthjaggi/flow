@@ -28,7 +28,12 @@ class KernelDetector(object):
         """
         raise NotImplementedError
 
-    def get_detectors_at_lane(self, detector_id):
+    def get_detectors_on_lane(self, lane_id):
+        """DocString
+        """
+        raise NotImplementedError
+
+    def get_detectors_on_edge(self, edge_id):
         """DocString
         """
         raise NotImplementedError

@@ -1201,15 +1201,15 @@ class InFlows:
 
         self.__flows.append(new_inflow)
 
+    def sort(self, key):
+        self.__flows.sort(key=key)
+
     def get(self):
         """Return the inflows of each edge."""
         return self.__flows
 
 
 class DetectorParams:
-    """DocString
-    """
-
     def __init__(self):
         """Instantiate Detectors."""
         self.__detectors = []
@@ -1224,8 +1224,16 @@ class DetectorParams:
         storage_file='out.xml',
         friendly_position=False,
     ):
-        """Docstring
-        pos on lane can be negative as well. 
+        """
+        Adds a single induction loop detector.
+
+        Args:
+            name (str): Detector ID.
+            lane_id (str): Lane ID.
+            position (int): Position on lane. Negative values denotes position from the opposite end of the lane.
+            frequency (int): Frequence of data collection.
+            storage_file (str, optional): Storage of detector data. Defaults to 'out.xml'.
+            friendly_position (bool, optional): Defaults to False.
         """
         detector = {
             'id': name,
@@ -1239,10 +1247,9 @@ class DetectorParams:
         self.__detectors.append(detector)
 
     def add_induction_loop_detectors_to_intersection(self, *args, **kwargs):
-        """Docstring
-        network: instance of Network: flow/networks/base.py.
-        positions on node_id can be negative as well. 
-        positions can be an array. 
+        """
+        These are added to pending detectors list as when this method is called only node_id, position are available.
+        But to create detectors, lane_id is also required which can be acquired only when the network object is available.
         """
         detector_params = {'args': args, **kwargs}
         self.__pending_detectors.append(detector_params)
@@ -1257,12 +1264,6 @@ class DetectorParams:
         storage_file='out.xml',
         friendly_position=False,
     ):
-        """Docstring
-        network: instance of Network: flow/networks/base.py.
-        positions on node_id can be negative as well. 
-        positions can be an array. 
-        """
-
         assert network is not None, 'Network cannot be None.'
 
         connections = network.connections[node_id]
