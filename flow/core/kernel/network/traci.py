@@ -6,8 +6,10 @@ import time
 import os
 import subprocess
 import xml.etree.ElementTree as ElementTree
+from collections import defaultdict
 from lxml import etree
 from copy import deepcopy
+import sumolib
 
 E = etree.Element
 
@@ -74,6 +76,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         self.addfn = None
         self.sumfn = None
         self.guifn = None
+        self.net = None  # sumolib.net objective for further usage
         self._edges = None
         self._connections = None
         self._edge_list = None
@@ -145,6 +148,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
                 self.network.types,
                 connections
             )
+        self.net = sumolib.net.readNet(self.netfn, withInternal=True)
 
         # list of edges and internal links (junctions)
         self._edge_list = [
@@ -963,3 +967,21 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         connection_data = {'next': next_conn_data, 'prev': prev_conn_data}
 
         return net_data, connection_data
+
+    def get_traffic_light_lane_movements(self, node_id: str):
+        """
+        Create dictionary representing lane-movement relations.
+
+        Args:
+            node_id (str): ID of the traffic light
+
+        Returns:
+            dict{str: list[int]}: a dictionary shows the movements corresponding to each (controlled) lane
+        """
+        lane_movements = defaultdict(list)
+        movements = self.net.getTLS(node_id).getConnections()
+        movements.sort(key=lambda x: x[2])
+        for movement in movements:
+            lane_movements[movement[0].getID()].append(movement[2])
+        
+        return lane_movements
