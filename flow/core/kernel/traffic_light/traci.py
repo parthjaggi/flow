@@ -101,7 +101,25 @@ class TraCITrafficLight(KernelTrafficLight):
         return self.kernel_api.trafficlight.getAllProgramLogics(node_id)
 
     def get_program_logic(self, node_id: str, program_idx=0):
-        return self.kernel_api.trafficlight.getAllProgramLogics(node_id)[program_idx]
+        """
+        Ger the program logic of a traffic light. Returns are in the generic format.
+
+        Args:
+            node_id (str): traffic light ID.
+            program_idx (int, optional): traffic light program index. Defaults to 0.
+
+        Returns:
+            list[dict]: program logic in the form of a list of phases. Including state and durations.
+        """
+        logic = self.kernel_api.trafficlight.getAllProgramLogics(node_id)[program_idx]
+        phases = []
+        for phase in logic.getPhases():
+            phases.append({
+                "colors": phase.state,
+                "duration": phase.duration
+            })
+        
+        return phases
 
     def get_incoming_lanes(self, node_id: str):
         """
