@@ -78,29 +78,30 @@ class TraCITrafficLight(KernelTrafficLight):
         """See parent class."""
         return self.__tls[node_id][tc.TL_RED_YELLOW_GREEN_STATE]
 
-    def set_cycle_logic(self, node_id, cycle_phases):
+    def set_program_logic(self, node_id, cycle_phases, program_id='0'):
         """
-        Set a new program logic with programID='0' to the given intersection.
+        Set a new program logic to the given traffic light.
 
         Args:
-            node_id (str): intersection ID
-            cycle_phases (list[dict]): phases in the cycle with their durations and states
+            node_id (str): traffic light ID.
+            cycle_phases (list[dict]): phases in the cycle with their durations and states.
+            program_id (str): program ID. Defaults to '0'.
         """
         phases = []
         for phase in cycle_phases:
             phases.append(Phase(duration=phase["duration"], state=phase["state"]))
         
-        logic = Logic(programID='0', type=0, currentPhaseIndex=0, phases=phases)
+        logic = Logic(programID=program_id, type=0, currentPhaseIndex=0, phases=phases)
         self.kernel_api.trafficlight.setCompleteRedYellowGreenDefinition(node_id, logic)
-        self.kernel_api.trafficlight.setProgram(node_id, '0')
+        self.kernel_api.trafficlight.setProgram(node_id, program_id)
         self.kernel_api.trafficlight.setPhase(node_id, 0)
         self.kernel_api.trafficlight.setPhaseDuration(node_id, phases[0].duration)
     
-    def get_program_logics(self, node_id: str):
+    def get_program_logics(self, node_id: str) -> list:
         return self.kernel_api.trafficlight.getAllProgramLogics(node_id)
 
-    def get_program_logic(self, node_id: str, logic_idx=0):
-        return self.kernel_api.trafficlight.getAllProgramLogics(node_id)[logic_idx]
+    def get_program_logic(self, node_id: str, program_idx=0):
+        return self.kernel_api.trafficlight.getAllProgramLogics(node_id)[program_idx]
 
     def get_incoming_lanes(self, node_id: str):
         """
