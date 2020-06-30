@@ -973,7 +973,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         Create dictionary representing lane-movement relations.
 
         Args:
-            node_id (str): ID of the traffic light
+            node_id (str): raffic light ID
 
         Returns:
             dict{str: list[int]}: a dictionary shows the movements corresponding to each (controlled) lane
@@ -985,3 +985,40 @@ class TraCIKernelNetwork(BaseKernelNetwork):
             lane_movements[movement[0].getID()].append(movement[2])
         
         return lane_movements
+
+    def get_node_type(self, node_id: str):
+        """
+        Get the type of a generic junction (may not be traffic lighted)
+
+        Args:
+            node_id (str): junction ID
+
+        Returns:
+            str: junction type, check out SUMO ducumentation
+        """
+        return self.net.getNode(node_id).getType()
+
+    def get_straight_upstream_internal_edges(self, edge_id: str):
+        """
+        Get one edge's all upstream internal edges with straight movement
+
+        Args:
+            edge_id (str): edge ID
+
+        Returns:
+            list[str]: list of straight movement internal egdes' IDs
+        """
+        straight_upstream_edges = []
+        upstream_edge_conns = self.net.getEdge(edge_id).getIncoming()
+        for edge, conns in upstream_edge_conns.items():
+            if edge.getFunction() == "internal":
+                # SUMO may include internal edges as incoming edges, skip them
+                continue
+            else:
+                # if incoming edge has a straight movement to the current edge, record it
+                for conn in conns:
+                    if conn.getDirection() == 's':
+                        straight_upstream_edges.append(self.net.getEdge(conn.getViaLaneID().rsplit('_', 1)[0]).getID())
+                        break
+
+        return straight_upstream_edges
