@@ -148,7 +148,6 @@ class TraCIKernelNetwork(BaseKernelNetwork):
                 self.network.types,
                 connections
             )
-        self.net = sumolib.net.readNet(self.netfn, withInternal=True)
 
         # list of edges and internal links (junctions)
         self._edge_list = [
@@ -872,6 +871,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         parser = etree.XMLParser(recover=True)
         net_path = os.path.join(self.cfg_path, self.netfn) \
             if net_params.template is None else self.netfn
+        self.net = sumolib.net.readNet(net_path, withInternal=True)
         tree = ElementTree.parse(net_path, parser=parser)
         root = tree.getroot()
 
