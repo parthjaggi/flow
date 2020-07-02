@@ -1287,7 +1287,7 @@ class DetectorParams:
     def add_lane_area_detector(self, det_params):
         raise NotImplementedError
 
-    def get(self, network):
+    def get(self, network=None):
         """Return all the detectors."""
         # create pending detectors
         for detector_params in self.__pending_detectors:

@@ -108,8 +108,8 @@ def convert_lanes_to_edges(lanes):
     >>> lanes
     >>> ['1175109_0', '1175109_1', '1175109_2', '1183934_0', '1183934_1', '1183934_2']
 
-    >>> self._get_edges_from_lanes(lanes)
-    >>> {'1175109', '1183934'}
+    >>> convert_lanes_to_edges(lanes)
+    >>> ['1175109', '1183934']
     """
     if isinstance(lanes, str):
         return lanes.rsplit('_', 1)[0]
