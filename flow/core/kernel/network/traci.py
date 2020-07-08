@@ -873,6 +873,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
             if net_params.template is None else self.netfn
         self.net = sumolib.net.readNet(net_path, withInternal=True)
         tree = ElementTree.parse(net_path, parser=parser)
+        self.net = sumolib.net.readNet(net_path, withInternal=True)
         root = tree.getroot()
 
         # Collect information on the available types (if any are available).
