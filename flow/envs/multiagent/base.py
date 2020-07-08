@@ -100,6 +100,7 @@ class MultiEnv(MultiAgentEnv, Env):
 
             # crash encodes whether the simulator experienced a collision
             crash = self.k.simulation.check_collision()
+            crash = 0
 
             # stop collecting new simulation steps if there is a collision
             if crash:
