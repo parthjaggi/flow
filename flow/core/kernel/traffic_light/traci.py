@@ -157,6 +157,6 @@ class TraCITrafficLight(KernelTrafficLight):
         lanes = list(dict.fromkeys(self.kernel_api.trafficlight.getControlledLanes(node_id)))
         edge_lanes = defaultdict(list)
         for lane in lanes:
-            edge_lanes[lane.rsplit('_')[0]].append(lane)
+            edge_lanes[lane.rsplit('_', 1)[0]].append(lane)
         return edge_lanes
     
