@@ -6,8 +6,10 @@ import time
 import os
 import subprocess
 import xml.etree.ElementTree as ElementTree
+from collections import defaultdict
 from lxml import etree
 from copy import deepcopy
+import sumolib
 
 E = etree.Element
 
@@ -74,6 +76,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         self.addfn = None
         self.sumfn = None
         self.guifn = None
+        self.net = None  # sumolib.net objective for further usage
         self._edges = None
         self._connections = None
         self._edge_list = None
@@ -868,7 +871,9 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         parser = etree.XMLParser(recover=True)
         net_path = os.path.join(self.cfg_path, self.netfn) \
             if net_params.template is None else self.netfn
+        self.net = sumolib.net.readNet(net_path, withInternal=True)
         tree = ElementTree.parse(net_path, parser=parser)
+        self.net = sumolib.net.readNet(net_path, withInternal=True)
         root = tree.getroot()
 
         # Collect information on the available types (if any are available).
@@ -963,3 +968,58 @@ class TraCIKernelNetwork(BaseKernelNetwork):
         connection_data = {'next': next_conn_data, 'prev': prev_conn_data}
 
         return net_data, connection_data
+
+    def get_traffic_light_lane_movements(self, node_id: str):
+        """
+        Create dictionary representing lane-movement relations.
+
+        Args:
+            node_id (str): raffic light ID
+
+        Returns:
+            dict{str: list[int]}: a dictionary shows the movements corresponding to each (controlled) lane
+        """
+        lane_movements = defaultdict(list)
+        movements = self.net.getTLS(node_id).getConnections()
+        movements.sort(key=lambda x: x[2])
+        for movement in movements:
+            lane_movements[movement[0].getID()].append(movement[2])
+        
+        return lane_movements
+
+    def get_node_type(self, node_id: str):
+        """
+        Get the type of a generic junction (may not be traffic lighted)
+
+        Args:
+            node_id (str): junction ID
+
+        Returns:
+            str: junction type, check out SUMO ducumentation
+        """
+        return self.net.getNode(node_id).getType()
+
+    def get_straight_upstream_internal_edges(self, edge_id: str):
+        """
+        Get one edge's all upstream internal edges with straight movement
+
+        Args:
+            edge_id (str): edge ID
+
+        Returns:
+            list[str]: list of straight movement internal egdes' IDs
+        """
+        straight_upstream_edges = []
+        upstream_edge_conns = self.net.getEdge(edge_id).getIncoming()
+        for edge, conns in upstream_edge_conns.items():
+            if edge.getFunction() == "internal":
+                # SUMO may include internal edges as incoming edges, skip them
+                continue
+            else:
+                # if incoming edge has a straight movement to the current edge, record it
+                for conn in conns:
+                    if conn.getDirection() == 's':
+                        straight_upstream_edges.append(self.net.getEdge(conn.getViaLaneID().rsplit('_', 1)[0]).getID())
+                        break
+
+        return straight_upstream_edges

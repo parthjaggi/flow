@@ -315,7 +315,7 @@ class Network(object):
                  net_params,
                  initial_config=InitialConfig(),
                  traffic_lights=TrafficLightParams(),
-                 detector_params=DetectorParams()):
+                 detector_params=None):
         """Instantiate the base network class.
 
         Attributes
@@ -338,7 +338,7 @@ class Network(object):
         self.net_params = net_params
         self.initial_config = initial_config
         self.traffic_lights = traffic_lights
-        self.detector_params = detector_params
+        self.detector_params = detector_params if detector_params else DetectorParams()
 
         # specify routes vehicles can take
         self.routes = self.specify_routes(net_params)
