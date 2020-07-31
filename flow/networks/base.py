@@ -365,7 +365,7 @@ class Network(object):
 
                 # add the vehicle types to the VehicleParams object
                 for t in vtypes:
-                    vehicles.add(veh_id=t, car_following_params=cf[t],
+                    vehicles.add(veh_id=t, length=vtypes[t]['length'], car_following_params=cf[t],
                                  lane_change_params=lc[t], num_vehicles=0)
 
                 # add the routes of the vehicles that will be departed later
@@ -790,6 +790,7 @@ class Network(object):
                     'accel': vtype.attrib['accel'],
                     'decel': vtype.attrib['decel'],
                     'sigma': vtype.attrib['sigma'],
+                    'tau': vtype.attrib['tau'],
                     'length': vtype.attrib.get('length', DEFAULT_LENGTH),
                     'minGap': vtype.attrib['minGap'],
                     'maxSpeed': vtype.attrib['maxSpeed'],
@@ -810,11 +811,13 @@ class Network(object):
                 accel=float(vtypes[typ]['accel']),
                 decel=float(vtypes[typ]['decel']),
                 sigma=float(vtypes[typ]['sigma']),
+                tau=float(vtypes[typ]['tau']),
                 length=float(vtypes[typ]['length']),
                 min_gap=float(vtypes[typ]['minGap']),
                 max_speed=float(vtypes[typ]['maxSpeed']),
                 probability=float(vtypes[typ]['probability']),
-                speed_dev=float(vtypes[typ]['speedDev'])
+                speed_dev=float(vtypes[typ]['speedDev']),
+                car_follow_model=vtypes[typ].get("carFollowModel", "Krauss")
             )
 
         return ret

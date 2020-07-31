@@ -235,6 +235,7 @@ class VehicleParams:
 
     def add(self,
             veh_id,
+            length=None,
             acceleration_controller=(SimCarFollowingController, {}),
             lane_change_controller=(SimLaneChangeController, {}),
             routing_controller=None,
@@ -249,6 +250,8 @@ class VehicleParams:
         ----------
         veh_id : str
             base vehicle ID for the vehicles (will be appended by a number)
+        length: float
+            vehicle's length
         acceleration_controller : tup, optional
             1st element: flow-specified acceleration controller
             2nd element: controller parameters (may be set to None to maintain
@@ -292,6 +295,10 @@ class VehicleParams:
              "initial_speed": initial_speed,
              "car_following_params": car_following_params,
              "lane_change_params": lane_change_params}
+
+        if length:
+            type_params['length'] = length
+            self.type_parameters[veh_id]['length'] = length
 
         if color:
             type_params['color'] = color
