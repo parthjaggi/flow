@@ -115,3 +115,6 @@ class TraCIDetector(KernelDetector):
     def get_time_since_detection(self, detector_id):
         """See parent class."""
         return self.kernel_api.inductionloop.getTimeSinceDetection(detector_id)
+
+    def get_detector_info(self, detector_id):
+        return self.__detector_infos[detector_id]

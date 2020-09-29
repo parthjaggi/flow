@@ -161,6 +161,11 @@ class TraCIKernelNetwork(BaseKernelNetwork):
             edge_id: [f'{edge_id}_{i}' for i in range(self._edges[edge_id]['lanes'])] for edge_id in self._edge_list
         }
 
+        # self._edge_lane_mapping does not contain junctions which are included in self._all_edge_lane_mapping.
+        self._all_edge_lane_mapping = {
+            edge_id: [f'{edge_id}_{i}' for i in range(self._edges[edge_id]['lanes'])] for edge_id in self._edges
+        }
+
         # list of lanes
         self._lane_list = sum([lane_list for lane_list in self._edge_lane_mapping.values()], [])
 
@@ -326,6 +331,10 @@ class TraCIKernelNetwork(BaseKernelNetwork):
     def get_edge_lane_mapping(self):
         """See parent class."""
         return self._edge_lane_mapping
+
+    def get_all_edge_lane_mapping(self):
+        """See parent class."""
+        return self._all_edge_lane_mapping
 
     def get_lane_list(self):
         """See parent class."""
