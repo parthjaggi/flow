@@ -113,3 +113,5 @@ flow.ang
 
 
 # flow/utils/flow_warnings.py
+qmix/results/
+results/
