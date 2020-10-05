@@ -128,6 +128,10 @@ class TraCISimulation(KernelSimulation):
                     sumo_call.append("--no-warnings")
                     sumo_call.append("true")
 
+                if sim_params.start_at_load:
+                    sumo_call.append("--start")
+                    sumo_call.append("true")
+
                 # set the time it takes for a gridlock teleport to occur
                 sumo_call.append("--time-to-teleport")
                 sumo_call.append(str(int(sim_params.teleport_time)))
