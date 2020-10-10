@@ -19,7 +19,8 @@ def makexml(name, nsl):
 def printxml(t, fn):
     """Print information from a dict into an xml file."""
     etree.ElementTree(t).write(
-        fn, pretty_print=True, encoding='UTF-8', xml_declaration=True)
+        fn, pretty_print=True, encoding='UTF-8', xml_declaration=True
+    )
 
 
 def ensure_dir(path):
@@ -79,8 +80,7 @@ def emission_to_csv(emission_path, output_path=None):
                 out_data[-1]['PMx'] = float(car.attrib['PMx'])
                 out_data[-1]['speed'] = float(car.attrib['speed'])
                 out_data[-1]['edge_id'] = car.attrib['lane'].rpartition('_')[0]
-                out_data[-1]['lane_number'] = car.attrib['lane'].\
-                    rpartition('_')[-1]
+                out_data[-1]['lane_number'] = car.attrib['lane'].rpartition('_')[-1]
             except KeyError:
                 del out_data[-1]
 
@@ -114,3 +114,42 @@ def convert_lanes_to_edges(lanes):
     if isinstance(lanes, str):
         return lanes.rsplit('_', 1)[0]
     return list(dict.fromkeys(map(lambda x: x.rsplit('_', 1)[0], lanes)))
+
+
+def update_dict_using_dict(dict1, dict2, operator):
+    """
+    Updates the elements of dict1 with the elements of dict2 using the given operator.
+    Returns a 
+
+    Args:
+        dict1 (dict): Dictionary.
+        dict2 (dict): Dictionary.
+        operator (function): Can use the operator module to get basic operators.
+
+    Returns:
+        dict: Returns a new dictionary.
+    """
+    dict1 = dict1.copy()
+    for k, v in dict2.items():
+        if k in dict1:
+            dict1[k] = operator(dict1[k], dict2[k])
+        else:
+            dict1[k] = dict2[k]
+    return dict1
+
+
+def update_all_dict_values(my_dict, value):
+    """
+    All the values of the given dictionary are updated to a single given value.
+
+    Args:
+        my_dict (dict): Given dictionary.
+        value: Can be any data structure. list, dict, tuple, set, int or string.
+
+    Returns:
+        dict: Updated dict with the performed changes.
+    """
+    my_dict = my_dict.copy()
+    for k in my_dict.keys():
+        my_dict[k] = value
+    return my_dict

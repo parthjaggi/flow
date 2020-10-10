@@ -565,6 +565,8 @@ class SumoParams(SimParams):
         after every reset if "render" is set to True.
     print_warnings : bool, optional
         If set to false, this will silence sumo warnings on the stdout
+    start_at_load : bool, optional
+        If set to false, this will ask the user to start the simulation from the gui
     teleport_time : int, optional
         If negative, vehicles don't teleport in gridlock. If positive,
         they teleport after teleport_time seconds
@@ -593,6 +595,7 @@ class SumoParams(SimParams):
                  seed=None,
                  restart_instance=False,
                  print_warnings=True,
+                 start_at_load=True,
                  teleport_time=-1,
                  num_clients=1,
                  color_by_speed=False,
@@ -607,6 +610,7 @@ class SumoParams(SimParams):
         self.seed = seed
         self.overtake_right = overtake_right
         self.print_warnings = print_warnings
+        self.start_at_load = start_at_load
         self.teleport_time = teleport_time
         self.num_clients = num_clients
         self.color_by_speed = color_by_speed
