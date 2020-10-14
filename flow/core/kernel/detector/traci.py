@@ -92,7 +92,7 @@ class TraCIDetector(KernelDetector):
                 detectors.append({'id': detector_id, **info})
         return detectors
 
-    def get_number_of_entered_vehicles(self, detector_id):
+    def get_last_step_vehicle_count(self, detector_id):
         """See parent class."""
         return self.kernel_api.inductionloop.getLastStepVehicleNumber(detector_id)
 
