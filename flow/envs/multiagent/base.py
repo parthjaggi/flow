@@ -31,6 +31,8 @@ class MultiEnv(MultiAgentEnv, Env):
                 return self._action_repeat_helper(rl_actions)
             elif self._action_repeat_type == 'extend_action':
                 return self._extend_action_repeat_helper(rl_actions)
+            elif self._action_repeat_type == 'ff':
+                return self._fast_forward_action_repeat_helper(rl_actions)
             else:
                 raise NotImplementedError(self._action_repeat_type)
         else:
@@ -79,6 +81,36 @@ class MultiEnv(MultiAgentEnv, Env):
             done_all = done['__all__']
             current_step += 1
 
+        return states, total_reward, done, infos
+
+    def _fast_forward_action_repeat_helper(self, rl_actions):
+        """
+        Executes given rl_actions. If next timestep is not actionable, the same action is repeated until actionable timestep is encountered.
+        SecondBasedTrafficLight will ensure only reasonable actions are executed on the environment during non-actionable timesteps.
+        For future actionable timesteps, EXTEND action is performed until self._repeat_count is reached.
+        Check self._step_helper for more documentation.
+        """
+        EXTEND = 0
+        for agent in self._agents.values():
+            is_extend_change = type(agent._action_connector).__name__ == 'ExtendChangePhaseConnector'
+            assert is_extend_change, 'Action selector should be extend change'
+
+        done_all = False
+        current_step = 0
+        total_reward = {}
+
+        while (current_step < self._repeat_count) and not done_all:
+            if current_step > 0:
+                rl_actions = update_all_dict_values(rl_actions, EXTEND)
+            
+            is_actionable = False
+            while not is_actionable and not done_all:
+                states, reward, done, infos = self._step_helper(rl_actions)
+                is_actionable = next(iter(states.values()))['actionable'].all()
+                total_reward = update_dict_using_dict(total_reward, reward, operator.add)
+                done_all = done['__all__']
+
+            current_step += 1
         return states, total_reward, done, infos
 
     def _step_helper(self, rl_actions):
