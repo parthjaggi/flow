@@ -630,32 +630,32 @@ class Env(gym.Env):
         """
         raise NotImplementedError
 
-    @property
-    def action_space(self):
-        """Identify the dimensions and bounds of the action space.
+    # @property
+    # def action_space(self):
+    #     """Identify the dimensions and bounds of the action space.
+    #
+    #     MUST BE implemented in new environments.
+    #
+    #     Returns
+    #     -------
+    #     gym Box or Tuple type
+    #         a bounded box depicting the shape and bounds of the action space
+    #     """
+    #     raise NotImplementedError
 
-        MUST BE implemented in new environments.
-
-        Returns
-        -------
-        gym Box or Tuple type
-            a bounded box depicting the shape and bounds of the action space
-        """
-        raise NotImplementedError
-
-    @property
-    def observation_space(self):
-        """Identify the dimensions and bounds of the observation space.
-
-        MUST BE implemented in new environments.
-
-        Returns
-        -------
-        gym Box or Tuple type
-            a bounded box depicting the shape and bounds of the observation
-            space
-        """
-        raise NotImplementedError
+    # @property
+    # def observation_space(self):
+    #     """Identify the dimensions and bounds of the observation space.
+    #
+    #     MUST BE implemented in new environments.
+    #
+    #     Returns
+    #     -------
+    #     gym Box or Tuple type
+    #         a bounded box depicting the shape and bounds of the observation
+    #         space
+    #     """
+    #     raise NotImplementedError
 
     def compute_reward(self, rl_actions, **kwargs):
         """Reward function for the RL agent(s).
