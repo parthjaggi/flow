@@ -386,12 +386,13 @@ class MultiEnv(MultiAgentEnv, Env):
             return None
 
         # clip according to the action space requirements
-        if isinstance(self.action_space, Box):
-            for key, action in rl_actions.items():
-                rl_actions[key] = np.clip(
-                    action,
-                    a_min=self.action_space.low,
-                    a_max=self.action_space.high)
+        # [TODO] nicolas removed this because it would assume all agents share the same action space.
+        # if isinstance(self.action_space, Box):
+        #     for key, action in rl_actions.items():
+        #         rl_actions[key] = np.clip(
+        #             action,
+        #             a_min=self.action_space.low,
+        #             a_max=self.action_space.high)
         return rl_actions
 
     def apply_rl_actions(self, rl_actions=None):
