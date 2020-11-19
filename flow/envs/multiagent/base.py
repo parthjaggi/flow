@@ -4,6 +4,7 @@ from copy import deepcopy
 import numpy as np
 import random
 import traceback
+import operator
 from gym.spaces import Box
 
 from traci.exceptions import FatalTraCIError
@@ -13,12 +14,106 @@ from ray.rllib.env import MultiAgentEnv
 
 from flow.envs.base import Env
 from flow.utils.exceptions import FatalFlowError
+from flow.core.util import update_dict_using_dict, update_all_dict_values
 
 
 class MultiEnv(MultiAgentEnv, Env):
     """Multi-agent version of base env. See parent class for info."""
 
     def step(self, rl_actions):
+        """
+        Check self._step_helper for documentation.
+        """
+        if self._action_repeat:
+            assert len(self._agents) == 1, 'AR not yet tested on multi-agent scenarios.'
+
+            if self._action_repeat_type == 'last_action':
+                return self._action_repeat_helper(rl_actions)
+            elif self._action_repeat_type == 'extend_action':
+                return self._extend_action_repeat_helper(rl_actions)
+            elif self._action_repeat_type == 'ff':
+                return self._fast_forward_action_repeat_helper(rl_actions)
+            else:
+                raise NotImplementedError(self._action_repeat_type)
+        else:
+            return self._step_helper(rl_actions)
+ 
+    def _action_repeat_helper(self, rl_actions):
+        """
+        For self._repeat_count number of steps, the given rl_actions is performed over the environment repeatedly.
+        Reward returned is the aggregate of rewards during the self._repeat_count number of steps.
+        State returned is the final state. 
+        Check self._step_helper for more documentation.
+        """
+        done_all = False
+        current_step = 0
+        total_reward = {}
+
+        while (current_step < self._repeat_count) and not done_all:
+            states, reward, done, infos = self._step_helper(rl_actions)
+            total_reward = update_dict_using_dict(total_reward, reward, operator.add)
+            done_all = done['__all__']
+            current_step += 1
+
+        return states, total_reward, done, infos
+ 
+    def _extend_action_repeat_helper(self, rl_actions):
+        """
+        Executes the given rl_actions in the first timestep.
+        For future timesteps until the self._repeat_count is reached, EXTEND action is performed.
+        Only supported for ExtendChangePhaseConnector action selector for now.
+        Check self._step_helper for more documentation.
+        """
+        EXTEND = 0
+        for agent in self._agents.values():
+            is_extend_change = type(agent._action_connector).__name__ == 'ExtendChangePhaseConnector'
+            assert is_extend_change, 'Action selector should be extend change'
+
+        done_all = False
+        current_step = 0
+        total_reward = {}
+
+        while (current_step < self._repeat_count) and not done_all:
+            if current_step > 0:
+                rl_actions = update_all_dict_values(rl_actions, EXTEND)
+            states, reward, done, infos = self._step_helper(rl_actions)
+            total_reward = update_dict_using_dict(total_reward, reward, operator.add)
+            done_all = done['__all__']
+            current_step += 1
+
+        return states, total_reward, done, infos
+
+    def _fast_forward_action_repeat_helper(self, rl_actions):
+        """
+        Executes given rl_actions. If next timestep is not actionable, the same action is repeated until actionable timestep is encountered.
+        SecondBasedTrafficLight will ensure only reasonable actions are executed on the environment during non-actionable timesteps.
+        For future actionable timesteps, EXTEND action is performed until self._repeat_count is reached.
+        Check self._step_helper for more documentation.
+        """
+        EXTEND = 0
+        for agent in self._agents.values():
+            is_extend_change = type(agent._action_connector).__name__ == 'ExtendChangePhaseConnector'
+            assert is_extend_change, 'Action selector should be extend change'
+
+        done_all = False
+        current_step = 0
+        total_reward = {}
+
+        while (current_step < self._repeat_count) and not done_all:
+            if current_step > 0:
+                rl_actions = update_all_dict_values(rl_actions, EXTEND)
+            
+            is_actionable = False
+            while not is_actionable and not done_all:
+                states, reward, done, infos = self._step_helper(rl_actions)
+                is_actionable = next(iter(states.values()))['actionable'].all()
+                total_reward = update_dict_using_dict(total_reward, reward, operator.add)
+                done_all = done['__all__']
+
+            current_step += 1
+        return states, total_reward, done, infos
+
+    def _step_helper(self, rl_actions):
         """Advance the environment by one step.
 
         Assigns actions to autonomous and human-driven agents (i.e. vehicles,
