@@ -140,15 +140,6 @@ class TraCISimulation(KernelSimulation):
                 sumo_call.append("--collision.check-junctions")
                 sumo_call.append("true")
 
-                # sumo_call.append('--log')
-                # sumo_call.append('./mylog.log')
-
-                # sumo_call.append('--fcd-output')
-                # sumo_call.append('./fcd.xml')
-
-                # sumo_call.append('--netstate-dump')
-                # sumo_call.append('./nsd.xml')
-
                 logging.info(" Starting SUMO on port " + str(port))
                 logging.debug(" Cfg file: " + str(network.cfg))
                 if sim_params.num_clients > 1:
