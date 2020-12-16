@@ -980,6 +980,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
     def get_traffic_light_lane_movements(self, node_id: str):
         """
         Create dictionary representing lane-movement relations.
+        sumolib.connection: [inLane, outLane, linkNo]
 
         Args:
             node_id (str): raffic light ID
@@ -994,6 +995,16 @@ class TraCIKernelNetwork(BaseKernelNetwork):
             lane_movements[movement[0].getID()].append(movement[2])
         
         return lane_movements
+
+    def get_traffic_light_movement_lane(self, node_id: str):
+        movement_lane = {}
+        movements = self.net.getTLS(node_id).getConnections()
+        movements.sort(key=lambda x: x[2])
+        for movement in movements:
+            movement_lane[movement[2]] = movement[0].getID()
+
+        return movement_lane
+
 
     def get_node_type(self, node_id: str):
         """
