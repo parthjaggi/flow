@@ -630,6 +630,18 @@ class Env(gym.Env):
         """
         raise NotImplementedError
 
+    def get_info(self):
+        """Return the info of the simulation corresponding to the whole environment.
+
+        MUST BE implemented in new environments.
+
+        Returns
+        -------
+        info : dict
+            information on the environment from the last timestep
+        """
+        raise NotImplementedError
+
     # @property
     # def action_space(self):
     #     """Identify the dimensions and bounds of the action space.

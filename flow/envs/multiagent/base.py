@@ -209,7 +209,8 @@ class MultiEnv(MultiAgentEnv, Env):
             done['__all__'] = True
         else:
             done['__all__'] = False
-        infos = {key: {} for key in states.keys()}
+        # infos = {key: {} for key in states.keys()}
+        infos = self.get_info()
 
         # compute the reward
         if self.env_params.clip_actions:
