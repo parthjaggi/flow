@@ -7,7 +7,7 @@ import os
 import flow.config as config
 
 SITEPACKAGES = os.path.join(config.AIMSUN_SITEPACKAGES,
-                            "lib/python2.7/site-packages")
+                            "lib/python3.6/site-packages")
 sys.path.append(SITEPACKAGES)
 
 from flow.core.params import InFlows
@@ -19,7 +19,7 @@ import numpy as np
 
 
 sys.path.append(os.path.join(config.AIMSUN_NEXT_PATH,
-                             'programming/Aimsun Next API/AAPIPython/Micro'))
+                             'programming/Aimsun Next API/python/private/Micro'))
 
 
 # Load an empty template
