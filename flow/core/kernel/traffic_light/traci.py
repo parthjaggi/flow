@@ -152,11 +152,16 @@ class TraCITrafficLight(KernelTrafficLight):
             node_id (str): Intersection ID
 
         Returns:
-            dict: [description]
+            edge_lanes (dict{str: list[str]}): [description]
         """
         lanes = list(dict.fromkeys(self.kernel_api.trafficlight.getControlledLanes(node_id)))
         edge_lanes = defaultdict(list)
         for lane in lanes:
             edge_lanes[lane.rsplit('_', 1)[0]].append(lane)
         return edge_lanes
+
+    ### APIs for other traci.kernel. Consider to create new flow.kernel for these methods
+
+    def get_edges_lane_numbers(self, edge_ids: list):
+        return [self.kernel_api.edge.getLaneNumber(edge_id) for edge_id in edge_ids]
     
