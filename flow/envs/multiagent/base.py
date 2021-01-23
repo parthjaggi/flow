@@ -14,7 +14,7 @@ from ray.rllib.env import MultiAgentEnv
 
 from flow.envs.base import Env
 from flow.utils.exceptions import FatalFlowError
-from flow.core.util import update_dict_using_dict, update_all_dict_values
+from flow.core.util import update_dict_using_dict, update_all_dict_values, compactify_episode, first, save_episode_using_numpy
 
 
 class MultiEnv(MultiAgentEnv, Env):
@@ -213,17 +213,43 @@ class MultiEnv(MultiAgentEnv, Env):
 
         # compute the reward
         if self.env_params.clip_actions:
-            clipped_actions = self.clip_actions(rl_actions)
-            reward = self.compute_reward(clipped_actions, fail=crash)
+            rl_actions = self.clip_actions(rl_actions)
+            reward = self.compute_reward(rl_actions, fail=crash)
         else:
             reward = self.compute_reward(rl_actions, fail=crash)
 
         for rl_id in self.k.vehicle.get_arrived_rl_ids():
             done[rl_id] = True
             reward[rl_id] = 0
-            states[rl_id] = None #TODO Nicolas did this instead of this "np.zeros(self.observation_space.shape[0])"
+            states[rl_id] = None  # TODO: Nicolas did this instead of this "np.zeros(self.observation_space.shape[0])"
+        
+        if self.env_params.store_transitions:
+            self._save_transition(states, reward, rl_actions, done)
 
         return states, reward, done, infos
+
+    def _save_transition(self, obs, reward, action, done):
+        """
+        Appends incoming transition to self.transitions list.
+        On episode end, compactifies and saves the episode.
+
+        Args:
+            obs (dict): Observation dictionary.
+            reward (dict): Reward dictionary.
+            action (dict): Action dictionary.
+            done (dict): Done dictionary.
+        """
+        if getattr(self, 'transitions', None) is None:
+            self.transitions = []
+            self.intersection_id = next(iter(obs.keys()))
+            assert not len(obs.keys()) > 1, 'currently only single intersection storage is supported'
+        
+        self.transitions.append({'observation': obs, 'reward': reward, 'action': action})
+
+        if done['__all__']:
+            episode = compactify_episode(self.transitions, self.intersection_id)
+            save_episode_using_numpy(episode, 'dtse_')
+            self.transitions = []
 
     def reset(self, new_inflow_rate=None, perform_extra_work=None):
         """Reset the environment.

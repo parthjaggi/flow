@@ -3,6 +3,8 @@
 import csv
 import errno
 import os
+import numpy as np
+from pathlib import Path
 from lxml import etree
 from xml.etree import ElementTree
 
@@ -153,3 +155,64 @@ def update_all_dict_values(my_dict, value):
     for k in my_dict.keys():
         my_dict[k] = value
     return my_dict
+
+
+def first(iterable):
+    """
+    Returns first element of iterable.
+    """
+    return next(iter(iterable))
+
+
+def compactify_episode(transitions, intersection_id):
+    """
+    Generates compactified episode arrays using transitions collected over the episode.
+    Note that state leads action by 1 timestep.
+    This is because the first state generated using env.reset() is not captured in the transitions array passed as argument here.
+    Easy fix is to ignore the first element of the action array.
+
+    Args:
+        transitions (list): List of transitions collected.
+        intersection_id (str): Namely.
+
+    Returns:
+        dict: Compactified episode.
+    """
+    episode = {k: [t[k] for t in transitions] for k in first(transitions)}
+    episode['obs'] = np.array(list(map(lambda x: x[intersection_id]['dtse'], episode['observation'])))
+    episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['phase'], episode['observation'])))
+    episode['reward'] = np.array(list(map(lambda x: x[intersection_id], episode['reward'])))
+    episode['action'] = np.array(list(map(lambda x: x[intersection_id], episode['action'])))
+    del episode['observation']
+    return episode
+
+
+def get_wolf_root_directory():
+    """
+    Returns the wolf root directory.
+
+    Returns:
+        pathlib.PosixPath: wolf root directory object.
+    """
+    path = Path(os.getcwd())
+    while (path.name != 'wolf'):
+        path = path.parent
+    return path
+
+
+def save_episode_using_numpy(episode, base_fname):
+    """
+    Saves episode using numpy.save method.
+
+    Args:
+        episode (dict): Dictionary of episode.
+        base_fname (str): Base filename.
+    """
+    base_path = get_wolf_root_directory().parent/'episodes'
+    base_path.mkdir(exist_ok=True)
+    ep_count = 0
+    dest_fname = Path(base_path/f'{base_fname}{ep_count}.npy')
+    while (dest_fname.exists()):
+        ep_count += 1
+        dest_fname = Path(base_path/f'{base_fname}{ep_count}.npy')
+    np.save(dest_fname, episode)
