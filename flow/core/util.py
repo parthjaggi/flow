@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 from lxml import etree
 from xml.etree import ElementTree
-from wolf.world.environments.traffic.agents.connectors.action.exchange_change_phase import EXTEND, CHANGE
+from wolf.utils.enums import ExtendChangeNoopAction as A
 
 
 def makexml(name, nsl):
@@ -282,9 +282,9 @@ def get_corrected_actions(phase_history, action):
     for t, ph in enumerate(phase_history[:-1]):
         current_phase, current_phase_time = get_current_phase_time(ph)
         current_action = action[t + 1]
-        corrected_action = CHANGE if (current_phase_time >= MIN_PHASE_TIME) and (current_action == CHANGE) else EXTEND
+        corrected_action = A.CHANGE if (current_phase_time >= MIN_PHASE_TIME) and (current_action == A.CHANGE) else A.EXTEND
         if current_phase_time == MAX_PHASE_TIME:
-            corrected_action = CHANGE
+            corrected_action = A.CHANGE
         corrected_actions.append(corrected_action)
 
         phase_action = get_phase_action(first(current_phase), corrected_action)
@@ -309,9 +309,9 @@ def get_phase_action(current_phase, corrected_action):
     """
     phase_to_onehot_phase = {0: [1, 0], 1: [0, 1]}
 
-    if corrected_action == EXTEND:
+    if corrected_action == A.EXTEND:
         return phase_to_onehot_phase[current_phase]
     
-    if corrected_action == CHANGE:
+    if corrected_action == A.CHANGE:
         next_phase = 1 - current_phase
         return phase_to_onehot_phase[next_phase]
