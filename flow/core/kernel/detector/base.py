@@ -67,3 +67,8 @@ class KernelDetector(object):
         """DocString
         """
         raise NotImplementedError
+
+    def get_position(self, detector_id):
+        """DocString
+        """
+        raise NotImplementedError
