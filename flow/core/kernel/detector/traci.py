@@ -98,7 +98,7 @@ class TraCIDetector(KernelDetector):
 
     def get_mean_speed(self, detector_id):
         """See parent class."""
-        return self.kernel_api.inductionloop.get_mean_speed(detector_id)
+        return self.kernel_api.inductionloop.getLastStepMeanSpeed(detector_id)
 
     def get_vehicle_ids(self, detector_id):
         """See parent class."""
@@ -118,3 +118,6 @@ class TraCIDetector(KernelDetector):
 
     def get_detector_info(self, detector_id):
         return self.__detector_infos[detector_id]
+
+    def get_position(self, detector_id):
+        return self.kernel_api.inductionloop.getPosition(detector_id)

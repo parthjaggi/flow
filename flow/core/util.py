@@ -180,7 +180,7 @@ def compactify_episode(transitions, intersection_id):
         dict: Compactified episode.
     """
     episode = {k: [t[k] for t in transitions] for k in first(transitions)}
-    episode['obs'] = np.array(list(map(lambda x: x[intersection_id]['dtse'], episode['observation'])))
+    episode['obs'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs'], episode['observation'])))
     episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['phase'], episode['observation'])))
     episode['reward'] = np.array(list(map(lambda x: x[intersection_id], episode['reward'])))
     episode['action'] = np.array(list(map(lambda x: x[intersection_id], episode['action'])))
