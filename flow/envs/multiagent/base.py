@@ -248,7 +248,7 @@ class MultiEnv(MultiAgentEnv, Env):
 
         if done['__all__']:
             episode = compactify_episode(self.transitions, self.intersection_id)
-            save_episode_using_numpy(episode, 'dtse_')
+            save_episode_using_numpy(episode, '_detector_custom')
             self.transitions = []
 
     def reset(self, new_inflow_rate=None, perform_extra_work=None):

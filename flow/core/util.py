@@ -181,12 +181,12 @@ def compactify_episode(transitions, intersection_id):
     """
     episode = {k: [t[k] for t in transitions] for k in first(transitions)}
     episode['obs'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs'], episode['observation'])))
-    episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['phase'], episode['observation'])))
+    # episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['phase'], episode['observation'])))
     episode['reward'] = np.array(list(map(lambda x: x[intersection_id], episode['reward'])))
     episode['action'] = np.array(list(map(lambda x: x[intersection_id], episode['action'])))
-    corrected_actions, corrected_phase_actions = get_corrected_actions(episode['phase'][:, 0, 3:, :, 0], episode['action'])
-    episode['corrected_action'] = corrected_actions
-    episode['corrected_p_action'] = corrected_phase_actions
+    # corrected_actions, corrected_phase_actions = get_corrected_actions(episode['phase'][:, 0, 3:, :, 0], episode['action'])
+    # episode['corrected_action'] = corrected_actions
+    # episode['corrected_p_action'] = corrected_phase_actions
     
     del episode['observation']
     return episode
