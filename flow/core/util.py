@@ -180,10 +180,18 @@ def compactify_episode(transitions, intersection_id):
         dict: Compactified episode.
     """
     episode = {k: [t[k] for t in transitions] for k in first(transitions)}
-    episode['obs'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs'], episode['observation'])))
-    # episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['phase'], episode['observation'])))
-    episode['reward'] = np.array(list(map(lambda x: x[intersection_id], episode['reward'])))
-    episode['action'] = np.array(list(map(lambda x: x[intersection_id], episode['action'])))
+    obs_list = list(map(lambda x: x[intersection_id]['detector_obs'], episode['observation']))
+    if isinstance(obs_list[0], dict):
+        obs_list = list(map(lambda x: (x[intersection_id]['detector_obs']['enter'], x[intersection_id]['detector_obs']['on'], x[intersection_id]['detector_obs']['speed']), episode['observation']))
+
+
+    episode['obs'] = np.array(obs_list)
+    episode['enter'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['enter'], episode['observation']))[:-1])
+    episode['on'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['on'], episode['observation']))[:-1])
+    episode['speed'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['speed'], episode['observation']))[:-1])
+    episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['phase'], episode['observation']))[:-1])
+    episode['reward'] = np.array(list(map(lambda x: x[intersection_id], episode['reward']))[1:])
+    episode['action'] = np.array(list(map(lambda x: x[intersection_id], episode['action']))[1:])
     # corrected_actions, corrected_phase_actions = get_corrected_actions(episode['phase'][:, 0, 3:, :, 0], episode['action'])
     # episode['corrected_action'] = corrected_actions
     # episode['corrected_p_action'] = corrected_phase_actions
