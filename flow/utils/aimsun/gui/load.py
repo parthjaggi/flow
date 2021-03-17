@@ -244,36 +244,6 @@ s.recv(config.STATRESP_LEN)
 # Close the client socket
 s.close()
 
-gui = GKGUISystem.getGUISystem().getActiveGui()
-children = gui.children()
-for i, child in enumerate(children):
-    #print(str(i) + " " + child.objectName())
-    print(child.dumpObjectTree())
-    """
-    print("================================")
-    for j, child2 in enumerate(child.children()):
-        print(str(j) + " " + child2.objectName())
-    """
-
-"""
-app_tools = children[23]
-app_tools_children = app_tools.children()
-for i, child in enumerate(app_tools_children):
-    print(str(i) + " " + child.objectName())
-print("================================")
-exp_ctrl_widget = app_tools_children[5]
-exp_ctrl_children = exp_ctrl_widget.children()
-for i, child in enumerate(exp_ctrl_children):
-    print(str(i) + " " + child.objectName())
-print("================================")
-replication_cb = exp_ctrl_children[2]
-for i, child in enumerate(replication_cb.children()):
-    print(str(i) + " " + child.objectName())
-print("================================")
-tool_button = exp_ctrl_children[3]
-for i, child in enumerate(tool_button.children()):
-    print(str(i) + " " + child.objectName())
-"""
 # Set new replication step value
 col_sim = model.getColumn('GKExperiment::simStepAtt')
 experiment.setDataValue(col_sim, aimsun_config['sim_step'])
