@@ -1,19 +1,16 @@
-"""Script containing an interface to do scripting with Aimsun."""
+"""
+Script containing an interface to do scripting with Aimsun.
+Executed within the Aimsun subprocess.
+Updated to Python3 for Wolf.
+"""
 import sys
 import os
 
 import flow.config as config
 
 try:
-    SITEPACKAGES = os.path.join(config.AIMSUN_SITEPACKAGES,
-                                "lib/python3.6/site-packages")
-    sys.path.append(SITEPACKAGES)
-except TypeError:
-    raise EnvironmentError("Please declare the AIMSUN_SITEPACKAGES environment variable.")
-
-try:
     sys.path.append(os.path.join(config.AIMSUN_NEXT_PATH,
-                                 'programming/Aimsun Next API/python/private/Micro'))
+                                 'programming/Aimsun Next API/AAPIPython/Micro'))
 except TypeError:
     raise EnvironmentError("Please declare the AIMSUN_NEXT_PATH environment variable.")
 
@@ -203,7 +200,7 @@ class AimsunTemplate(object):
             # deeper attributes (e.g. turning.destination.name)
             try:
                 if type(result) is list:
-                    map(outer_self.__wrap_object, result)
+                    result = [ outer_self.__wrap_object(o) for o in result ]
                 else:
                     outer_self.__wrap_object(result)
             except TypeError:
@@ -243,7 +240,7 @@ class AimsunTemplate(object):
             list of objects to wrap (IMPORTANT: all the objects in the list
             must be of the same type)
         """
-        map(self.__wrap_object, objects)
+        return list(map(self.__wrap_object, objects))
 
     def __get_objects_by_type(self, type_name):
         """Simplify getter for Aimsun objects.
@@ -258,8 +255,13 @@ class AimsunTemplate(object):
             list of all Aimsun objects whose type is type_name
         """
         type_obj = self.model.getType(type_name)
-        objects = self.model.getCatalog().getObjectsByType(type_obj).values()
-        self.__wrap_objects(objects)
+        try:
+            objects = self.model.getCatalog().getObjectsByType(type_obj)
+            objects = list(objects.values())
+        except AttributeError:
+            objects = []
+        else:
+            self.__wrap_objects(objects)
         return objects
 
     def find_by_name(self, objects, name):

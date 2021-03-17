@@ -7,6 +7,9 @@
 #: simulation step
 SIMULATION_STEP = 0x00
 
+#: simulation reset
+SIMULATION_RESET = 0x1D
+
 #: terminate the simulation
 SIMULATION_TERMINATE = 0x01
 
@@ -105,3 +108,5 @@ TL_SET_STATE = 0x1B
 
 #: get traffic light state
 TL_GET_STATE = 0x1C
+
+#: (simulation reset 0x1D)

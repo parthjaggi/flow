@@ -1,6 +1,6 @@
 """
-Script used to control and interact with Aimsun through a TCP socket. Executed with the Aimsun interpreter.
-This is the version of the script that runs in a console (that is, without GUI).
+Script used to control and interact with Aimsun through a TCP socket.
+Executed with the Aimsun interpreter. GUI version.
 """
 import sys
 import os
@@ -11,22 +11,26 @@ import flow.config as config
 
 sys.path.append(os.path.join(config.AIMSUN_NEXT_PATH,
                              'programming/Aimsun Next API/python/private/Micro'))
-# The following modules are only accessible from a script launched from the Aimsun process
+# The following modules are only accessible from a script launched
+# from the Aimsun process
 # (their contents are described in the Aimsun scripting guide)
 import AAPI as aimsun_api
 from AAPI import *
 from PyANGKernel import *
+from PyANGGui import *
 
 import flow.utils.aimsun.constants as ac
 import flow.utils.aimsun.aimsun_struct as aimsun_struct
-from TCP_comms import ( send_formatted_message,
-                        get_formatted_message )
-from flow.config import ( HOST,
-                          RUN_API_ID,
-                          STATRESP,
-                          STATRESP_LEN )
+#from flow.utils.aimsun.gui.scripting_api import AimsunTemplate
+from flow.utils.aimsun.TCP_comms import (send_formatted_message,
+                                         get_formatted_message)
+from flow.config import (HOST,
+                         RUN_API_ID,
+                         STATRESP,
+                         STATRESP_LEN)
 
 model = GKSystem.getSystem().getActiveModel()
+gui   = GKGUISystem.getGUISystem().getActiveGui()
 
 # Kinds of formats:
 # 'i'   : Integer
@@ -52,17 +56,16 @@ def simulation_step(s):
         # Signal that the client is ready to receive the next command
         s.send(STATRESP)
 
-        # Receive the next command
+        # receive the next command
         command = s.recv(STATRESP_LEN)
 
-        # Convert to the integer command code (cf. constants.py)
+        # convert to the integer command code (cf. constants.py)
         command = int(command)
 
         if command == ac.SIMULATION_STEP:
-            # Send acknowledgement to client
+            # send acknowledgement to client
             s.send(STATRESP)
-
-	    # Get status response to indicate no optional data sent
+	    # get status response to indicate no optional data sent
             s.recv(STATRESP_LEN)
 
             step_done = True
@@ -82,7 +85,8 @@ def simulation_step(s):
             # 2 : Rewind
             # 3 : Stop
             # 4 : StopAt
-            # Command 2 restarts the replication, and reloads the Aimsun API
+            # Command 2 restarts the replication, and reloads
+            # the Aimsun API
 
         elif command == ac.SIMULATION_TERMINATE:
             s.send(STATRESP)
@@ -94,7 +98,7 @@ def simulation_step(s):
             cur_sim_time = aimsun_api.AKIGetCurrentSimulationTime()
             cur_sim_time = int(cur_sim_time)
             aimsun_api.ANGSetSimulationOrder(1, cur_sim_time)
-            # Command 1 cancels the replication and experiment.
+            # Command 1 camcels the replication and experiment.
             # (Please see ac.SIMULATION_RESTART for the simulation codes)
 
         elif command == ac.GET_EDGE_NAME:
@@ -453,7 +457,7 @@ def AAPILoad():
     """Execute commands while the Aimsun template is loading."""
     global s
 
-    # Set up TCP/IP connection with Wolf
+    # TCP/IP connection from the Aimsun process
     connected = False
     while not connected:
         try:

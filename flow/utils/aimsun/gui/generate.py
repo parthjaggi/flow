@@ -1,17 +1,15 @@
 # flake8: noqa
 """
 Script for generating a custom Aimsun network. Executed with the Aimsun interpreter.
-This is the version of the script that runs in a console (that is, without GUI).
+This is the version of the script that runs with GUI.
 """
+# TODO adapt this file with respect to scripting_api.py
+
 import sys
 import os
 import socket
 import json
 import numpy as np
-
-from PyANGBasic import *
-from PyANGKernel import *
-from PyANGConsole import *
 
 import flow.config as config
 from flow.core.params import InFlows
@@ -19,6 +17,30 @@ from flow.core.params import TrafficLightParams
 from flow.utils.aimsun.TCP_comms import get_dict
 
 from copy import deepcopy
+
+# Get the PORT for the TCP connection from a pipe
+# (the pipe is closed immediately on the Wolf end to
+#  avoid blocking reads)
+PORT = sys.stdin.readline()
+PORT = int(PORT)
+
+sys.path.append(os.path.join(config.AIMSUN_NEXT_PATH,
+                             'programming/Aimsun Next API/python/private/Micro'))
+
+#base_template_path = os.path.join(config.PROJECT_PATH,
+#                                  'flow/utils/aimsun/templates/Aimsun_Flow.ang')
+#mod_template_path  = os.path.join(config.PROJECT_PATH,
+#                                  'flow/utils/aimsun/templates/Aimsun_Flow_%s.ang' % str(PORT))
+#os.popen('cp %s %s' % (base_template_path,
+#                          mod_template_path))
+
+# Load a template with no network, single demand, single replication
+gui = GKGUISystem.getGUISystem().getActiveGui()
+gui.newDoc(os.path.join(config.PROJECT_PATH,
+                        "flow/utils/aimsun/templates/Aimsun_Flow.ang"),
+           "EPSG:32601")
+#gui.newDoc(mod_template_path, "EPSG:32601")
+model = gui.getActiveModel()
 
 def generate_net(nodes,
                  edges,
@@ -247,6 +269,14 @@ def generate_net(nodes,
         else:
             create_traffic_demand(model, veh_type["veh_id"])  # TODO debug
 
+    # set the view to "whole world" in Aimsun
+    view = gui.getActiveViewWindow().getView()
+    if view is not None:
+        view.wholeWorld()
+
+    # set view mode, each vehicle type with different color
+    set_vehicles_color(model)
+
     # set API
     network_name = aimsun_config["network_name"]
     scenario = model.getCatalog().findByName(
@@ -256,8 +286,10 @@ def generate_net(nodes,
         config.PROJECT_PATH, "flow/utils/aimsun/run.py"), True)
 
     # save
-    console.save(os.path.join(config.PROJECT_PATH,
-                              'flow/utils/aimsun/templates/latest_flow_generated_net.ang'))
+    gui.save(model,
+             os.path.join(config.PROJECT_PATH,
+                          'flow/utils/aimsun/templates/latest_flow_generated_net.ang'),
+             GGui.GGuiSaveType.eSaveAs)
 
 
 def generate_net_osm(file_name, inflows, veh_types):
@@ -353,11 +385,14 @@ def generate_net_osm(file_name, inflows, veh_types):
         network_name, model.getType("GKScenario"))  # find scenario
     scenario_data = scenario.getInputData()
     scenario_data.addExtension(os.path.join(
-        config.PROJECT_PATH, "flow/utils/aimsun/run.py"), True)
+        config.PROJECT_PATH, "flow/utils/aimsun/gui/run.py"), True)
 
     # save
-    console.save(os.path.join(config.PROJECT_PATH,
-                              'flow/utils/aimsun/templates/latest_flow_generated_net.ang'))
+    gui.save(model,
+             os.path.join(config.PROJECT_PATH,
+                          'flow/utils/aimsun/templates/latest_flow_generated_net.ang'),
+             GGui.GGuiSaveType.eSaveAs)
+
 
 def get_junctions(nodes):
     """Return the nodes with traffic lights.
@@ -534,7 +569,9 @@ def set_demand_item(model, demand, item):
     else:
         schedule = GKScheduleDemandItem()
         schedule.setTrafficDemandItem(item)
-        # Starts at 12:00:00 AM
+        # Starts at 8:00:00 AM
+        #schedule.setFrom(8 * 3600)
+        # FIX: Starts at 12:00:00 AM
         schedule.setFrom(0)
         # Duration: 500 hour
         schedule.setDuration(500 * 3600)
@@ -776,11 +813,8 @@ def set_sim_step(experiment, sim_step):
     experiment.setDataValue(col_sim, sim_step)
 
 
-# Receive the PORT to be used for the TCP connection with the
-# parent Wolf process as a command-line argument
-PORT = int(sys.argv[1])
-
-# Connect to the Wolf server socket
+# Receive the network-specific data from a server socket
+# operating from the Wolf (or Flow) network kernel
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, PORT))
 
@@ -795,21 +829,10 @@ aimsun_config = get_dict(s)
 # by sending a status response
 s.send(config.STATRESP)
 
-# Done
+# Close the client socket
 s.close()
 
-# Initialize the Aimsun console object
-console = ANGConsole()
-
-# Load a template with no network, a single demand, and a single replication
-base_template_path = os.path.join(config.PROJECT_PATH,
-                                  "flow/utils/aimsun/templates/Aimsun_Flow.ang")
-if console.open(base_template_path):
-    model = console.getModel()
-else:
-    print('[generate.py] ERROR: Failed to load the base template')
-
-# Export the data from the dictionary
+# export the data from the dictionary
 veh_types = aimsun_config['vehicle_types']
 osm_path = aimsun_config['osm_path']
 
@@ -825,8 +848,8 @@ if aimsun_config['traffic_lights'] is not None:
 else:
     traffic_lights = None
 
-# Generate the network
-if osm_path is not None:    # Generate OpenStreetMaps network
+# generate the network
+if osm_path is not None:
     generate_net_osm(osm_path, inflows, veh_types)
     edge_osm = {}
 
@@ -865,14 +888,12 @@ else:
 experiment_name = aimsun_config["experiment_name"]
 experiment = model.getCatalog().findByName(
     experiment_name, model.getType("GKTExperiment"))
-if experiment is None:
-    raise ValueError(f'[generate.py] Experiment by name {experiment_name} not found')
 
 # Set the sim step
 sim_step = aimsun_config["sim_step"]
 set_sim_step(experiment, sim_step)
 
-# Set the PORT, to be used in run.py
+# Set the PORT
 model.getType('GKModel').addColumn('GKModel::PORT', 'PORT', GKColumn.Int)
 col_port = model.getColumn('GKModel::PORT')
 model.setDataValue(col_port, PORT)
@@ -880,10 +901,6 @@ model.setDataValue(col_port, PORT)
 # Find the replication
 replication_name = aimsun_config["replication_name"]
 replication = model.getCatalog().findByName(replication_name)
-if replication is None:
-    raise ValueError(f'[generate.py] Replication by name {replication_name} not found')
-
-# Run the replication ('execute' = in batch mode)
-GKSystem.getSystem().executeAction('execute', replication, [], "")
-
-console.close()
+# execute, "play": run with GUI, "execute": run in batch mode
+mode = 'play' if aimsun_config['render'] is True else 'execute'
+GKSystem.getSystem().executeAction(mode, replication, [], "")
