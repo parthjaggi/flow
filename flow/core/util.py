@@ -192,15 +192,15 @@ def compactify_episode(transitions, intersection_id):
     return episode
 
 
-def get_wolf_root_directory():
+def get_sow45_code_directory():
     """
-    Returns the wolf root directory.
+    Returns the sow45_code repository directory.
 
     Returns:
         pathlib.PosixPath: wolf root directory object.
     """
     path = Path(os.getcwd())
-    while (path.name != 'wolf'):
+    while ('sow45_code' not in path.name):
         path = path.parent
     return path
 
