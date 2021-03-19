@@ -1,53 +1,46 @@
 # flake8: noqa
 """
 Script for generating a custom Aimsun network. Executed with the Aimsun interpreter.
-This is the version of the script that runs in a console (that is, without GUI).
+This is the version of the script that runs with GUI.
 """
+# TODO adapt this file with respect to scripting_api.py
+
 import sys
 import os
 import socket
 import json
 import numpy as np
-from copy import deepcopy
 
 import flow.config as config
 from flow.core.params import InFlows
 from flow.core.params import TrafficLightParams
-from flow.utils.aimsun.TCP_comms import (send_formatted_message,
-                                         get_formatted_message)
+from flow.utils.aimsun.TCP_comms import get_dict
 
+from copy import deepcopy
 
-# Receive the PORT to be used for the TCP connection with the
-# parent Wolf process as a command-line argument
-PORT = int(sys.argv[1])
+# Get the PORT for the TCP connection from a pipe
+# (the pipe is closed immediately on the Wolf end to
+#  avoid blocking reads)
+PORT = sys.stdin.readline()
+PORT = int(PORT)
 
-# Connect to the Wolf server socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((config.HOST, PORT))
+sys.path.append(os.path.join(config.AIMSUN_NEXT_PATH,
+                             'programming/Aimsun Next API/python/private/Micro'))
 
-# Send an identifier, letting the server know that we
-# expect to receive the Aimsun configuration dict
-s.send(config.NETWORK_LOAD_ID)
+#base_template_path = os.path.join(config.PROJECT_PATH,
+#                                  'flow/utils/aimsun/templates/Aimsun_Flow.ang')
+#mod_template_path  = os.path.join(config.PROJECT_PATH,
+#                                  'flow/utils/aimsun/templates/Aimsun_Flow_%s.ang' % str(PORT))
+#os.popen('cp %s %s' % (base_template_path,
+#                          mod_template_path))
 
-# Read in the Aimsun config
-aimsun_config = get_formatted_message(s, 'dict')
-
-# Let the server know that the message has been received,
-# by sending a status response
-s.send(config.STATRESP)
-
-# Done
-s.close()
-
-
-from PyANGBasic import *
-from PyANGKernel import *
-
-if aimsun_config['render']:    # Run with GUI
-    from PyANGGui import *
-else:                          # Run in console
-    from PyANGConsole import *
-
+# Load a template with no network, single demand, single replication
+gui = GKGUISystem.getGUISystem().getActiveGui()
+gui.newDoc(os.path.join(config.PROJECT_PATH,
+                        "flow/utils/aimsun/templates/Aimsun_Flow.ang"),
+           "EPSG:32601")
+#gui.newDoc(mod_template_path, "EPSG:32601")
+model = gui.getActiveModel()
 
 def generate_net(nodes,
                  edges,
@@ -74,30 +67,30 @@ def generate_net(nodes,
     """
     inflows = inflows.get()
     lane_width = 3.6  # TODO additional params??
-    type_section = model.getType('GKSection')
-    type_node = model.getType('GKNode')
-    type_turn = model.getType('GKTurning')
-    type_traffic_state = model.getType('GKTrafficState')
-    type_vehicle = model.getType('GKVehicle')
-    type_demand = model.getType('GKTrafficDemand')
+    type_section = model.getType("GKSection")
+    type_node = model.getType("GKNode")
+    type_turn = model.getType("GKTurning")
+    type_traffic_state = model.getType("GKTrafficState")
+    type_vehicle = model.getType("GKVehicle")
+    type_demand = model.getType("GKTrafficDemand")
 
     # draw edges
     for edge in edges:
         points = GKPoints()
-        if 'shape' in edge:
-            for p in edge['shape']:  # TODO add x, y offset (radius)
+        if "shape" in edge:
+            for p in edge["shape"]:  # TODO add x, y offset (radius)
                 new_point = GKPoint()
                 new_point.set(p[0], p[1], 0)
                 points.append(new_point)
 
-            cmd = model.createNewCmd(model.getType('GKSection'))
-            cmd.setPoints(edge['numLanes'], lane_width, points)
+            cmd = model.createNewCmd(model.getType("GKSection"))
+            cmd.setPoints(edge["numLanes"], lane_width, points)
             model.getCommander().addCommand(cmd)
             section = cmd.createdObject()
-            section.setName(edge['id'])
+            section.setName(edge["id"])
             edge_aimsun = model.getCatalog().findByName(
-                edge['id'], type_section)
-            edge_aimsun.setSpeed(edge['speed'] * 3.6)
+                edge["id"], type_section)
+            edge_aimsun.setSpeed(edge["speed"] * 3.6)
         else:
             first_node, last_node = get_edge_nodes(edge, nodes)
             theta = get_edge_angle(first_node, last_node)
@@ -105,22 +98,22 @@ def generate_net(nodes,
             last_node_offset = [0, 0]  # x, and y offset
 
             # offset edge ends if there is a radius in the node
-            if 'radius' in first_node:
-                first_node_offset[0] = first_node['radius'] * \
+            if "radius" in first_node:
+                first_node_offset[0] = first_node["radius"] * \
                     np.cos(theta*np.pi/180)
-                first_node_offset[1] = first_node['radius'] * \
+                first_node_offset[1] = first_node["radius"] * \
                     np.sin(theta*np.pi/180)
-            if 'radius' in last_node:
-                last_node_offset[0] = - last_node['radius'] * \
+            if "radius" in last_node:
+                last_node_offset[0] = - last_node["radius"] * \
                     np.cos(theta*np.pi/180)
-                last_node_offset[1] = - last_node['radius'] * \
+                last_node_offset[1] = - last_node["radius"] * \
                     np.sin(theta*np.pi/180)
 
             # offset edge ends if there are multiple edges between nodes
             # find the edges that share the first node
             edges_shared_node = [edg for edg in edges
-                                 if first_node['id'] == edg['to'] or
-                                 last_node['id'] == edg['from']]
+                                 if first_node["id"] == edg["to"] or
+                                 last_node["id"] == edg["from"]]
             for new_edge in edges_shared_node:
                 new_first_node, new_last_node = get_edge_nodes(new_edge, nodes)
                 new_theta = get_edge_angle(new_first_node, new_last_node)
@@ -146,13 +139,13 @@ def generate_net(nodes,
                           0)
             points.append(new_point)
             cmd = model.createNewCmd(type_section)
-            cmd.setPoints(edge['numLanes'], lane_width, points)
+            cmd.setPoints(edge["numLanes"], lane_width, points)
             model.getCommander().addCommand(cmd)
             section = cmd.createdObject()
-            section.setName(edge['id'])
+            section.setName(edge["id"])
             edge_aimsun = model.getCatalog().findByName(
-                edge['id'], type_section)
-            edge_aimsun.setSpeed(edge['speed'] * 3.6)
+                edge["id"], type_section)
+            edge_aimsun.setSpeed(edge["speed"] * 3.6)
 
     # draw nodes and connections
     for node in nodes:
@@ -163,7 +156,7 @@ def generate_net(nodes,
         cmd.setPosition(node_pos)
         model.getCommander().addCommand(cmd)
         new_node = cmd.createdObject()
-        new_node.setName(node['id'])
+        new_node.setName(node["id"])
 
         # list of edges from and to the node
         from_edges = [
@@ -177,14 +170,14 @@ def generate_net(nodes,
             for connection in connections[node['id']]:
                 cmd = model.createNewCmd(type_turn)
                 from_section = model.getCatalog().findByName(
-                    connection['from'], type_section, True)
+                    connection["from"], type_section, True)
                 to_section = model.getCatalog().findByName(
-                    connection['to'], type_section, True)
+                    connection["to"], type_section, True)
                 cmd.setTurning(from_section, to_section)
                 model.getCommander().addCommand(cmd)
                 turn = cmd.createdObject()
-                turn_name = '{}_to_{}'.format(connection['from'],
-                                              connection['to'])
+                turn_name = "{}_to_{}".format(connection["from"],
+                                              connection["to"])
                 turn.setName(turn_name)
                 existing_node = turn.getNode()
                 if existing_node is not None:
@@ -204,7 +197,7 @@ def generate_net(nodes,
                     cmd.setTurning(from_section, to_section)
                     model.getCommander().addCommand(cmd)
                     turn = cmd.createdObject()
-                    turn_name = '{}_to_{}'.format(from_edges[i], to_edges[j])
+                    turn_name = "{}_to_{}".format(from_edges[i], to_edges[j])
                     turn.setName(turn_name)
                     existing_node = turn.getNode()
                     if existing_node is not None:
@@ -215,7 +208,7 @@ def generate_net(nodes,
 
     # get the control plan
     control_plan = model.getCatalog().findByName(
-            'Control Plan', model.getType('GKControlPlan'))
+            "Control Plan", model.getType("GKControlPlan"))
 
     # add traffic lights
     tls_properties = traffic_lights.get_properties()
@@ -223,7 +216,7 @@ def generate_net(nodes,
     junctions = get_junctions(nodes)
     # add meters for all nodes in junctions
     for node in junctions:
-        phases = tls_properties[node['id']]['phases']
+        phases = tls_properties[node['id']]["phases"]
         create_node_meters(model, control_plan, node['id'], phases)
 
     # set vehicle types
@@ -231,27 +224,27 @@ def generate_net(nodes,
     if vehicles is not None:
         for vehicle in vehicles.values():
             name = vehicle.getName()
-            if name == 'Car':
+            if name == "Car":
                 for veh_type in veh_types:
                     cmd = GKObjectDuplicateCmd()
                     cmd.init(vehicle)
                     model.getCommander().addCommand(cmd)
                     new_veh = cmd.createdObject()
-                    new_veh.setName(veh_type['veh_id'])
+                    new_veh.setName(veh_type["veh_id"])
 
     # Create new states based on vehicle types
     for veh_type in veh_types:
-        new_state = create_state(model, veh_type['veh_id'])
+        new_state = create_state(model, veh_type["veh_id"])
         # find vehicle type
         veh_type = model.getCatalog().findByName(
-            veh_type['veh_id'], model.getType('GKVehicle'))
+            veh_type["veh_id"], model.getType("GKVehicle"))
         # set state vehicles
         new_state.setVehicle(veh_type)
 
     # add traffic inflows to traffic states
     for inflow in inflows:
         traffic_state_aimsun = model.getCatalog().findByName(
-            inflow['vtype'], type_traffic_state)
+            inflow["vtype"], type_traffic_state)
         edge_aimsun = model.getCatalog().findByName(
             inflow['edge'], type_section)
         traffic_state_aimsun.setEntranceFlow(
@@ -259,7 +252,7 @@ def generate_net(nodes,
 
     # get traffic demand
     demand = model.getCatalog().findByName(
-        'Traffic Demand 864', type_demand)
+        "Traffic Demand 864", type_demand)
     # clear the demand of any previous item
     demand.removeSchedule()
 
@@ -267,42 +260,36 @@ def generate_net(nodes,
     for veh_type in veh_types:
         # find the state for each vehicle type
         state_car = model.getCatalog().findByName(
-            veh_type['veh_id'], type_traffic_state)
-        if demand is not None and demand.isA('GKTrafficDemand'):
+            veh_type["veh_id"], type_traffic_state)
+        if demand is not None and demand.isA("GKTrafficDemand"):
             # Add the state
-            if state_car is not None and state_car.isA('GKTrafficState'):
+            if state_car is not None and state_car.isA("GKTrafficState"):
                 set_demand_item(model, demand, state_car)
             model.getCommander().addCommand(None)
         else:
-            create_traffic_demand(model, veh_type['veh_id'])  # TODO debug
+            create_traffic_demand(model, veh_type["veh_id"])  # TODO debug
 
-    if aimsun_config['render']:
-        # set the view to "whole world" in Aimsun
-        view = gui.getActiveViewWindow().getView()
-        if view is not None:
-            view.wholeWorld()
+    # set the view to "whole world" in Aimsun
+    view = gui.getActiveViewWindow().getView()
+    if view is not None:
+        view.wholeWorld()
 
-        # set view mode, each vehicle type with different color
-        set_vehicles_color(model)
+    # set view mode, each vehicle type with different color
+    set_vehicles_color(model)
 
     # set API
-    network_name = aimsun_config['network_name']
+    network_name = aimsun_config["network_name"]
     scenario = model.getCatalog().findByName(
-        network_name, model.getType('GKScenario'))  # find scenario
+        network_name, model.getType("GKScenario"))  # find scenario
     scenario_data = scenario.getInputData()
     scenario_data.addExtension(os.path.join(
-        config.PROJECT_PATH, 'flow', 'utils', 'aimsun', 'run.py'), True)
+        config.PROJECT_PATH, "flow/utils/aimsun/run.py"), True)
 
     # save
-    save_path = os.path.join(config.PROJECT_PATH,
-                                  'flow', 'utils', 'aimsun', 'templates',
-                                  'latest_flow_generated_net.ang')
-    if aimsun_config['render']:
-        gui.save(model,
-                 save_path,
-                 GGui.GGuiSaveType.eSaveAs)
-    else:
-        console.save(save_path)
+    gui.save(model,
+             os.path.join(config.PROJECT_PATH,
+                          'flow/utils/aimsun/templates/latest_flow_generated_net.ang'),
+             GGui.GGuiSaveType.eSaveAs)
 
 
 def generate_net_osm(file_name, inflows, veh_types):
@@ -384,33 +371,28 @@ def generate_net_osm(file_name, inflows, veh_types):
         else:
             create_traffic_demand(model, veh_type["veh_id"])  # TODO debug
 
-    if aimsun_config['render']:
-        # set the view to "whole world" in Aimsun
-        view = gui.getActiveViewWindow().getView()
-        if view is not None:
-            view.wholeWorld()
+    # set the view to "whole world" in Aimsun
+    view = gui.getActiveViewWindow().getView()
+    if view is not None:
+        view.wholeWorld()
 
-        # set view mode, each vehicle type with different color
-        set_vehicles_color(model)
+    # set view mode, each vehicle type with different color
+    set_vehicles_color(model)
 
     # set API
-    network_name = aimsun_config['network_name']
+    network_name = aimsun_config["network_name"]
     scenario = model.getCatalog().findByName(
-        network_name, model.getType('GKScenario'))  # find scenario
+        network_name, model.getType("GKScenario"))  # find scenario
     scenario_data = scenario.getInputData()
     scenario_data.addExtension(os.path.join(
-        config.PROJECT_PATH, 'flow', 'utils', 'aimsun', 'run.py'), True)
+        config.PROJECT_PATH, "flow/utils/aimsun/gui/run.py"), True)
 
     # save
-    save_path = os.path.join(config.PROJECT_PATH,
-                                  'flow', 'utils', 'aimsun', 'templates',
-                                  'latest_flow_generated_net.ang')
-    if aimsun_config['render']:
-        gui.save(model,
-                 save_path,
-                 GGui.GGuiSaveType.eSaveAs)
-    else:
-        console.save(save_path)
+    gui.save(model,
+             os.path.join(config.PROJECT_PATH,
+                          'flow/utils/aimsun/templates/latest_flow_generated_net.ang'),
+             GGui.GGuiSaveType.eSaveAs)
+
 
 def get_junctions(nodes):
     """Return the nodes with traffic lights.
@@ -587,7 +569,9 @@ def set_demand_item(model, demand, item):
     else:
         schedule = GKScheduleDemandItem()
         schedule.setTrafficDemandItem(item)
-        # Starts at 12:00:00 AM
+        # Starts at 8:00:00 AM
+        #schedule.setFrom(8 * 3600)
+        # FIX: Starts at 12:00:00 AM
         schedule.setFrom(0)
         # Duration: 500 hour
         schedule.setDuration(500 * 3600)
@@ -829,24 +813,26 @@ def set_sim_step(experiment, sim_step):
     experiment.setDataValue(col_sim, sim_step)
 
 
-# Load a template with no network, a single demand, and a single replication
-base_template_path = os.path.join(config.PROJECT_PATH,
-                                  'flow', 'utils', 'aimsun', 'templates', 'Aimsun_Flow.ang')
+# Receive the network-specific data from a server socket
+# operating from the Wolf (or Flow) network kernel
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((config.HOST, PORT))
 
-# Get the Aimsun model
-if aimsun_config['render']:
-    gui = GKGUISystem.getGUISystem().getActiveGui()
-    gui.newDoc(base_template_path, 'EPSG:32601')
-    model = gui.getActiveModel()
-else:
-    console = ANGConsole()
-    if console.open(base_template_path):
-        model = console.getModel()
-    else:
-        print('[generate.py] ERROR: Failed to load the base template')
+# Send an identifier, letting the server know that we
+# expect to receive the Aimsun configuration dict
+s.send(config.NETWORK_LOAD_ID)
 
+# Read in the Aimsun config
+aimsun_config = get_dict(s)
 
-# Export the data from the dictionary
+# Let the server know that the message has been received,
+# by sending a status response
+s.send(config.STATRESP)
+
+# Close the client socket
+s.close()
+
+# export the data from the dictionary
 veh_types = aimsun_config['vehicle_types']
 osm_path = aimsun_config['osm_path']
 
@@ -862,8 +848,8 @@ if aimsun_config['traffic_lights'] is not None:
 else:
     traffic_lights = None
 
-# Generate the network
-if osm_path is not None:    # Generate OpenStreetMaps network
+# generate the network
+if osm_path is not None:
     generate_net_osm(osm_path, inflows, veh_types)
     edge_osm = {}
 
@@ -902,14 +888,12 @@ else:
 experiment_name = aimsun_config["experiment_name"]
 experiment = model.getCatalog().findByName(
     experiment_name, model.getType("GKTExperiment"))
-if experiment is None:
-    raise ValueError(f'[generate.py] Experiment by name {experiment_name} not found')
 
 # Set the sim step
 sim_step = aimsun_config["sim_step"]
 set_sim_step(experiment, sim_step)
 
-# Set the PORT, to be used in run.py
+# Set the PORT
 model.getType('GKModel').addColumn('GKModel::PORT', 'PORT', GKColumn.Int)
 col_port = model.getColumn('GKModel::PORT')
 model.setDataValue(col_port, PORT)
@@ -917,11 +901,6 @@ model.setDataValue(col_port, PORT)
 # Find the replication
 replication_name = aimsun_config["replication_name"]
 replication = model.getCatalog().findByName(replication_name)
-if replication is None:
-    raise ValueError(f'[generate.py] Replication by name {replication_name} not found')
-
-# Run the replication ('execute' = in batch mode)
-action = 'play' if aimsun_config['render'] else 'execute'
-# play: with animation
-# execute: in batch mode
-GKSystem.getSystem().executeAction(action, replication, [], "")
+# execute, "play": run with GUI, "execute": run in batch mode
+mode = 'play' if aimsun_config['render'] is True else 'execute'
+GKSystem.getSystem().executeAction(mode, replication, [], "")

@@ -1262,7 +1262,8 @@ class DetectorParams:
         These are added to pending detectors list as when this method is called only node_id, position are available.
         But to create detectors, lane_id is also required which can be acquired only when the network object is available.
         """
-        detector_params = {'args': args, **kwargs}
+        detector_params = kwargs
+        detector_params['args'] = args
         self.__pending_detectors.append(detector_params)
 
     def _add_induction_loop_detectors_to_intersection(
@@ -1278,13 +1279,14 @@ class DetectorParams:
         assert network is not None, 'Network cannot be None.'
 
         connections = network.connections[node_id]
-        incoming_lanes = list(set([f"{c['from']}_{c['fromLane']}" for c in connections]))
+        # incoming_lanes = list(set([f"{c['from']}_{c['fromLane']}" for c in connections]))
+        incoming_lanes = list(set(["{}_{}".format(c['from'], c['fromLane']) for c in connections]))
         counter = 0
 
         for lane_id in incoming_lanes:
             for position in positions:
                 detector = {
-                    'id': f'{name}_{counter}',
+                    'id': '{}_{}'.format(name, counter),
                     'lane': lane_id,
                     'pos': str(position),
                     'freq': str(frequency),
@@ -1305,7 +1307,7 @@ class DetectorParams:
             args = detector_params['args']
             del detector_params['args']
             self._add_induction_loop_detectors_to_intersection(
-                *args, **detector_params, network=network
+                *args, network=network, **detector_params
             )
         self.__pending_detectors = []
         return self.__detectors

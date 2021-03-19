@@ -1,0 +1,25 @@
+env: traf
+
+env_args:
+  test_env: 'traffic_env_test0_3' # if provided overrides below properties
+  horizon: 200
+  render: False
+  add_noop_action: True
+  state: 'image'
+  n: 1
+  m: 2
+
+agent: "cnn"
+obs_last_action: False # Whether the last action of all agents (in the sight range) are included in the obs
+obs_agent_id: False # Include the agent's one_hot id in the observation
+use_tensorboard: True # Log results to tensorboard
+save_model: True # Save the models to disk
+save_model_interval: 2000 # Save models after this many timesteps
+
+learner_log_interval: 2000
+log_interval: 2000
+runner_log_interval: 2000
+t_max: 2000000
+test_interval: 10000
+test_nepisode: 16
+
