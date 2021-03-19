@@ -46,7 +46,6 @@ model = GKSystem.getSystem().getActiveModel()
 
 col_port = model.getColumn('GKModel::PORT')
 PORT = model.getDataValue(col_port)[0]
-PORT = 9971
 sim_reset = False
 
 entered_vehicles = []

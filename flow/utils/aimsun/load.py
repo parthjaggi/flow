@@ -220,7 +220,7 @@ template_path = aimsun_config['template_path']
 if aimsun_config['render']:
     gui = GKGUISystem.getGUISystem().getActiveGui()
     print(f'[load.py] Loading template {template_path}')
-    gui.loadNetwork(template_path, False, True)
+    gui.loadNetwork(template_path, False, False)
     # Second argument: isATemplate : False
     #    Do not ignore errors
     # Third argument: checkLocks : False
