@@ -11,8 +11,7 @@ import flow.config as config
 
 sys.path.append(os.path.join(config.AIMSUN_NEXT_PATH,
                              'programming/Aimsun Next API/python/private/Micro'))
-# The following modules are only accessible from a script launched
-# from the Aimsun process
+# The following modules are only accessible from a script launched from the Aimsun process
 # (their contents are described in the Aimsun scripting guide)
 import AAPI as aimsun_api
 from AAPI import *
@@ -21,9 +20,8 @@ from PyANGGui import *
 
 import flow.utils.aimsun.constants as ac
 import flow.utils.aimsun.aimsun_struct as aimsun_struct
-#from flow.utils.aimsun.gui.scripting_api import AimsunTemplate
 from flow.utils.aimsun.TCP_comms import (send_formatted_message,
-                                         get_formatted_message)
+                                         get_formatted_message, get_dict)
 from flow.config import (HOST,
                          RUN_API_ID,
                          STATRESP,
@@ -35,29 +33,37 @@ gui   = GKGUISystem.getGUISystem().getActiveGui()
 # Kinds of formats:
 # 'i'   : Integer
 # 'f'   : Float
+# '?'   : Bool
 # 'str' : String
-# '?"   : Bool
+# 'dict': Dictionary
 
 entered_vehicles = []
 exited_vehicles = []
 
 
 def simulation_step(s):
-    """Receive commands to carry out from a TCP Flow client.
-       Runs for every simulation step.
+    """
+    Receives commands from a TCP Wolf server. Runs every simulation step.
 
     Parameters
     ----------
     s : socket.socket
-        Socket for the client connection
+        Socket for the TCP connection
     """
     step_done = False
     while not step_done:
-        # Signal that the client is ready to receive the next command
-        s.send(STATRESP)
+        try:
+            # Signal that the client is ready to receive the next command
+            s.send(STATRESP)
 
-        # receive the next command
-        command = s.recv(STATRESP_LEN)
+            # receive the next command
+            command = s.recv(STATRESP_LEN)
+        except socket.error:
+            cur_sim_time = int(aimsun_api.AKIGetCurrentSimulationTime())
+            aimsun_api.ANGSetSimulationOrder(1, cur_sim_time)
+            # Cancel the experiment
+            print('[run.py] ERROR: Broken pipe, ending the experiment')
+            break
 
         # convert to the integer command code (cf. constants.py)
         command = int(command)
@@ -219,39 +225,20 @@ def simulation_step(s):
         elif command == ac.VEH_GET_STATIC:
             s.send(STATRESP)
 
-            veh_id, = get_formatted_message(s, 'i')
+            config = get_formatted_message(s, 'dict')
 
+            veh_id = config['veh_id']
             static_info = aimsun_api.AKIVehGetStaticInf(veh_id)
-            output = (static_info.report,
-                      static_info.idVeh,
-                      static_info.type,
-                      static_info.length,
-                      static_info.width,
-                      static_info.maxDesiredSpeed,
-                      static_info.maxAcceleration,
-                      static_info.normalDeceleration,
-                      static_info.maxDeceleration,
-                      static_info.speedAcceptance,
-                      static_info.minDistanceVeh,
-                      static_info.giveWayTime,
-                      static_info.guidanceAcceptance,
-                      static_info.enrouted,
-                      static_info.equipped,
-                      static_info.tracked,
-                      static_info.keepfastLane,
-                      static_info.headwayMin,
-                      static_info.sensitivityFactor,
-                      static_info.reactionTime,
-                      static_info.reactionTimeAtStop,
-                      static_info.reactionTimeAtTrafficLight,
-                      static_info.centroidOrigin,
-                      static_info.centroidDest,
-                      static_info.idsectionExit,
-                      static_info.idLine)
-            send_formatted_message(s, 'i i i f f f f f f f '
-                                      'f f f i i i ? f f f '
-                                      'f f i i i i',
-                                   *output)
+
+            valid_keys = aimsun_struct.keys_static_veh_in_section
+            keys = config['keys'] or valid_keys
+
+            results = aimsun_struct.to_dict(
+                static_info,
+                valid_keys,
+                keys,
+            )
+            send_formatted_message(s, 'dict', results)
 
         elif command == ac.VEH_GET_TRACKING:
             s.send(STATRESP)
@@ -501,6 +488,19 @@ def AAPIManage(time, timeSta, timeTrans, acycle):
 
 def AAPIPostManage(time, timeSta, timeTrans, acycle):
     """Execute commands after an Aimsun simulation step."""
+    plugin = GKSystem.getSystem().getPlugin('GGetram').getSimulator().getSimulationControl()
+    print(plugin.getName())
+    print(type(plugin))
+    print(len(plugin.__dict__.keys()))
+
+#    print(plugin.verify())
+#    sim = plugin.getSimulator()
+#    print(sim)
+#    simulator = plugin.getCreateSimulator()
+#    sim = get_simulator(model)
+#    a = sim.getSimulationControl()
+#    a.run()
+    print(":   )")
     return 0
 
 

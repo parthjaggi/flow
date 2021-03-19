@@ -16,7 +16,7 @@ from PyANGConsole import *
 import flow.config as config
 from flow.core.params import InFlows
 from flow.core.params import TrafficLightParams
-from flow.utils.aimsun.TCP_comms import get_dict
+from flow.utils.aimsun.TCP_comms import get_formatted_message
 
 from copy import deepcopy
 
@@ -789,7 +789,7 @@ s.connect((config.HOST, PORT))
 s.send(config.NETWORK_LOAD_ID)
 
 # Read in the Aimsun config
-aimsun_config = get_dict(s)
+aimsun_config = get_formatted_message(s, 'dict')
 
 # Let the server know that the message has been received,
 # by sending a status response

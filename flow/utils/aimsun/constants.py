@@ -57,7 +57,10 @@ VEH_GET_TYPE_ID = 0x0B
 VEH_GET_STATIC = 0x0C
 
 #: get vehicle tracking information
-VEH_GET_TRACKING = 0x0D
+VEH_GET_DYNAMIC = 0x0D
+
+#: get vehicle Adaptive Cruise Control information
+VEH_GET_ACC = 0x1E
 
 #: get vehicle leader
 VEH_GET_LEADER = 0x0E
@@ -109,4 +112,10 @@ TL_SET_STATE = 0x1B
 #: get traffic light state
 TL_GET_STATE = 0x1C
 
+
+###############################################################################
+#                              Other Commands                                 #
+###############################################################################
+
 #: (simulation reset 0x1D)
+#: (get vehicle Adaptive Cruise Control information 0x1E)

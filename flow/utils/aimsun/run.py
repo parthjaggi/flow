@@ -8,58 +8,79 @@ import socket
 import struct
 import flow.config as config
 
-
 sys.path.append(os.path.join(config.AIMSUN_NEXT_PATH,
-                             'programming/Aimsun Next API/python/private/Micro'))
-# The following modules are only accessible from a script launched from the Aimsun process
+                             'programming', 'Aimsun Next API',
+                             'python', 'private', 'Micro'))
+# The following modules are only accessible to the Aimsun interpreter
 # (their contents are described in the Aimsun scripting guide)
 import AAPI as aimsun_api
 from AAPI import *
+
+from PyANGBasic import *
 from PyANGKernel import *
 
 import flow.utils.aimsun.constants as ac
 import flow.utils.aimsun.aimsun_struct as aimsun_struct
-from TCP_comms import ( send_formatted_message,
-                        get_formatted_message )
-from flow.config import ( HOST,
-                          RUN_API_ID,
-                          STATRESP,
-                          STATRESP_LEN )
+from TCP_comms import (send_formatted_message,
+                       get_formatted_message)
+from flow.config import (HOST,
+                         RUN_API_ID,
+                         STATRESP,
+                         STATRESP_LEN)
 
 model = GKSystem.getSystem().getActiveModel()
 
-# Kinds of formats:
-# 'i'   : Integer
-# 'f'   : Float
-# 'str' : String
-# '?"   : Bool
+# Kinds of struct formats:
+# 'i'    : Integer
+# 'f'    : Float
+# '?'    : Bool
+# 'str'  : String
+# 'dict' : Dictionary
+
+# Codes for simulation orders (ANGSetSimulationOrder)
+# 0 : None
+# 1 : Cancel
+# 2 : Rewind
+# 3 : Stop
+# 4 : StopAt
+
+col_port = model.getColumn('GKModel::PORT')
+PORT = model.getDataValue(col_port)[0]
+PORT = 9971
+sim_reset = False
 
 entered_vehicles = []
 exited_vehicles = []
 
-
 def simulation_step(s):
-    """Receive commands to carry out from a TCP Flow client.
-       Runs for every simulation step.
+    """
+    Receives commands to carry out from a TCP Wolf server. Runs every simulation step.
 
     Parameters
     ----------
     s : socket.socket
-        Socket for the client connection
+        Socket for the TCP connection
     """
     step_done = False
     while not step_done:
-        # Signal that the client is ready to receive the next command
-        s.send(STATRESP)
+        try:
+            # Signal that the client is ready to receive the next command
+            s.send(STATRESP)
 
-        # Receive the next command
-        command = s.recv(STATRESP_LEN)
+            # Receive the next command
+            command = s.recv(STATRESP_LEN)
+            # Convert the bytestring command to an integer (cf. constants.py)
+            command = int(command)
 
-        # Convert to the integer command code (cf. constants.py)
-        command = int(command)
+        except socket.error:
+            # If the pipe is broken, cancel the experiment to avoid process leaks
+            cur_sim_time = int(aimsun_api.AKIGetCurrentSimulationTime())
+            aimsun_api.ANGSetSimulationOrder(1, cur_sim_time)
+            break
+
 
         if command == ac.SIMULATION_STEP:
-            # Send acknowledgement to client
+            # Send acknowledgement to server
             s.send(STATRESP)
 
 	    # Get status response to indicate no optional data sent
@@ -73,15 +94,10 @@ def simulation_step(s):
             s.recv(STATRESP_LEN)
 
             step_done = True
-            cur_sim_time = aimsun_api.AKIGetCurrentSimulationTime()
-            cur_sim_time = int(cur_sim_time)
+            global sim_reset
+            sim_reset = True
+            cur_sim_time = int(aimsun_api.AKIGetCurrentSimulationTime())
             aimsun_api.ANGSetSimulationOrder(2, cur_sim_time)
-            # Codes for simulation orders
-            # 0 : None
-            # 1 : Cancel
-            # 2 : Rewind
-            # 3 : Stop
-            # 4 : StopAt
             # Command 2 restarts the replication, and reloads the Aimsun API
 
         elif command == ac.SIMULATION_TERMINATE:
@@ -91,11 +107,9 @@ def simulation_step(s):
             s.recv(STATRESP_LEN)
 
             step_done = True
-            cur_sim_time = aimsun_api.AKIGetCurrentSimulationTime()
-            cur_sim_time = int(cur_sim_time)
+            cur_sim_time = int(aimsun_api.AKIGetCurrentSimulationTime())
             aimsun_api.ANGSetSimulationOrder(1, cur_sim_time)
             # Command 1 cancels the replication and experiment.
-            # (Please see ac.SIMULATION_RESTART for the simulation codes)
 
         elif command == ac.GET_EDGE_NAME:
             s.send(STATRESP)
@@ -171,7 +185,7 @@ def simulation_step(s):
             s.recv(STATRESP_LEN)
 
             # send entered_vehicles list to client
-            if entered_vehicles:    # entered_vehicles is not empty
+            if entered_vehicles:
                 output = ':'.join([str(veh) for veh in entered_vehicles])
             else:
                 output = '-1'
@@ -187,7 +201,7 @@ def simulation_step(s):
 
             s.recv(STATRESP_LEN)
 
-            if exited_vehicles:    # exited_vehicles is not empty
+            if exited_vehicles:
                 output = ':'.join([str(veh) for veh in exited_vehicles])
             else:
                 output = '-1'
@@ -215,107 +229,74 @@ def simulation_step(s):
         elif command == ac.VEH_GET_STATIC:
             s.send(STATRESP)
 
-            veh_id, = get_formatted_message(s, 'i')
+            config_dict = get_formatted_message(s, 'dict')
+            veh_id = config_dict['veh_id']
+            tracked = config_dict['tracked']
 
-            static_info = aimsun_api.AKIVehGetStaticInf(veh_id)
-            output = (static_info.report,
-                      static_info.idVeh,
-                      static_info.type,
-                      static_info.length,
-                      static_info.width,
-                      static_info.maxDesiredSpeed,
-                      static_info.maxAcceleration,
-                      static_info.normalDeceleration,
-                      static_info.maxDeceleration,
-                      static_info.speedAcceptance,
-                      static_info.minDistanceVeh,
-                      static_info.giveWayTime,
-                      static_info.guidanceAcceptance,
-                      static_info.enrouted,
-                      static_info.equipped,
-                      static_info.tracked,
-                      static_info.keepfastLane,
-                      static_info.headwayMin,
-                      static_info.sensitivityFactor,
-                      static_info.reactionTime,
-                      static_info.reactionTimeAtStop,
-                      static_info.reactionTimeAtTrafficLight,
-                      static_info.centroidOrigin,
-                      static_info.centroidDest,
-                      static_info.idsectionExit,
-                      static_info.idLine)
-            send_formatted_message(s, 'i i i f f f f f f f '
-                                      'f f f i i i ? f f f '
-                                      'f f i i i i',
-                                   *output)
+            static_info = aimsun_api.AKIVehTrackedGetStaticInf(veh_id) if tracked else \
+                          aimsun_api.AKIVehGetStaticInf(veh_id) # slow
 
-        elif command == ac.VEH_GET_TRACKING:
+            valid_keys = aimsun_struct.keys_static_veh_info
+            keys = config_dict['keys'] or valid_keys
+
+            try:
+                output = aimsun_struct.to_dict(
+                    static_info,
+                    valid_keys,
+                    keys
+                )
+            except (RuntimeError, KeyError):
+                output = {'report': -1}
+
+            send_formatted_message(s, 'dict', output)
+
+        elif command == ac.VEH_GET_DYNAMIC:
             s.send(STATRESP)
 
-            info_bitmap = get_formatted_message(s, 'str')
+            config_dict = get_formatted_message(s, 'dict')
+            veh_id = config_dict['veh_id']
+            tracked = config_dict['tracked']
 
-            # The bitmap is built as follows:
-            #   the id of the vehicle
-            #   a ':' character
-            #   21 bits representing what information is to be returned
-            #   a bit representing whether or not the vehicle is tracked
+            dynamic_info = aimsun_api.AKIVehTrackedGetInf(veh_id) if tracked else \
+                           aimsun_api.AKIVehGetInf(veh_id) # slow
 
-            # retrieve the tracked boolean
-            info_bitmap = info_bitmap[:-1]
-            tracked = info_bitmap[-1]
+            valid_keys = aimsun_struct.keys_dynamic_veh_info
+            keys = config_dict['keys'] or valid_keys
 
-            # separate the actual bitmap from the vehicle id
-            veh_id, info_bitmap = info_bitmap.split(':')
-            veh_id = int(veh_id)
+            try:
+                output = aimsun_struct.to_dict(
+                    dynamic_info,
+                    valid_keys,
+                    keys
+                )
+            except (RuntimeError, KeyError):
+                output = {'report': -1}
 
-            # retrieve the tracking info of the vehicle
-            tracking_info = aimsun_api.AKIVehTrackedGetInf(veh_id) if tracked else \
-                            aimsun_api.AKIVehGetInf(veh_id)
+            send_formatted_message(s, 'dict', output)
 
-            # The commented out attributes are no longer in InfVeh
-            # for whatever reason
-            data = (  #tracking_info.report,
-                      #tracking_info.idVeh,
-                      #tracking_info.type,
-                      tracking_info.CurrentPos,
-                      tracking_info.distance2End,
-                      tracking_info.xCurrentPos,
-                      tracking_info.yCurrentPos,
-                      tracking_info.zCurrentPos,
-                      tracking_info.xCurrentPosBack,
-                      tracking_info.yCurrentPosBack,
-                      tracking_info.zCurrentPosBack,
-                      tracking_info.CurrentSpeed,
-                      #tracking_info.PreviousSpeed,
-                      tracking_info.TotalDistance,
-                      #tracking_info.SystemGenerationT,
-                      #tracking_info.SystemEntranceT,
-                      tracking_info.SectionEntranceT,
-                      tracking_info.CurrentStopTime,
-                      tracking_info.stopped,
-                      tracking_info.idSection,
-                      tracking_info.segment,
-                      tracking_info.numberLane,
-                      tracking_info.idJunction,
-                      tracking_info.idSectionFrom,
-                      tracking_info.idLaneFrom,
-                      tracking_info.idSectionTo,
-                      tracking_info.idLaneTo )
+        elif command == ac.VEH_GET_ACC:
+            s.send(STATRESP)
 
-            # form the output and output format according to the bitmap
-            output = []
-            in_format = ''
-            for i in range(len(info_bitmap)):
-                if info_bitmap[i] == '1':
-                    in_format += 'f ' if i <= 12 else 'i '
-                    output.append(data[i])
-            if in_format == '':
-                output = None
-            else:
-                in_format = in_format[:-1]    # Remove the last space
+            config_dict = get_formatted_message(s, 'dict')
+            veh_id = config_dict['veh_id']
+            tracked = config_dict['tracked']
 
-            send_formatted_message(s, in_format,
-                                   *output)
+            acc_info = aimsun_api.AKIVehTrackedGetStaticInfACCParams(veh_id) if tracked else \
+                       aimsun_api.AKIVehGetStaticInfACCParams(veh_id) # slow
+
+            valid_keys = aimsun_struct.keys_acc_veh_info
+            keys = config_dict['keys'] or valid_keys
+
+            try:
+                output = aimsun_struct.to_dict(
+                    acc_info,
+                    valid_keys,
+                    keys
+                )
+            except (RuntimeError, KeyError):
+                output = {'report': -1}
+
+            send_formatted_message(s, 'dict', output)
 
         elif command == ac.VEH_GET_LEADER:
             s.send(STATRESP)
@@ -443,11 +424,9 @@ def simulation_step(s):
     return 0
 
 
+
 # =======================================================================
 # ========================== Aimsun API =================================
-
-col_port = model.getColumn('GKModel::PORT')
-PORT = int(model.getDataValue(col_port)[0])
 
 def AAPILoad():
     """Execute commands while the Aimsun template is loading."""
@@ -492,8 +471,12 @@ def AAPISimulationReady():
 
 def AAPIManage(time, timeSta, timeTrans, acycle):
     """Execute commands before an Aimsun simulation step."""
-    return simulation_step(s)    # Carry out commands sent by the server
-                                 # through the TCP connection
+    if not sim_reset:
+        return simulation_step(s)
+    # Carry out commands sent by the Wolf server
+    else:
+        return 0
+    # Ignore the additional simulation step taken after a reset
 
 def AAPIPostManage(time, timeSta, timeTrans, acycle):
     """Execute commands after an Aimsun simulation step."""

@@ -20,13 +20,11 @@ import struct
 
 import flow.utils.aimsun.constants as ac
 import flow.utils.aimsun.aimsun_struct as aimsun_struct
-
-from flow.utils.aimsun.aimsun_struct import INFOS_ATTR_BY_INDEX
-from flow.utils.aimsun.TCP_comms import ( send_formatted_message,
-                                          get_formatted_message )
-from flow.config import ( RUN_API_ID,
-                          STATRESP,
-                          STATRESP_LEN )
+from flow.utils.aimsun.TCP_comms import (send_formatted_message,
+                                         get_formatted_message)
+from flow.config import (RUN_API_ID,
+                         STATRESP,
+                         STATRESP_LEN)
 
 
 def accept_aimsun_connection(server):
@@ -45,8 +43,7 @@ def accept_aimsun_connection(server):
         socket : socket
             The connection
     """
-    # Wait for the client with the expected identifier
-    # and create the connection
+    # Wait for the client with identifier RUN_API_ID
     connected = False
     while not connected:
         try:
@@ -55,8 +52,7 @@ def accept_aimsun_connection(server):
         except socket.error:
             connected = False
 
-    # Send a status response acknowledging
-    # the connection
+    # Send a status response acknowledging the connection
     conn.send(STATRESP)
 
     return conn
@@ -146,7 +142,6 @@ class WolfAimsunAPI():
                            None,
                            in_format=None,
                            out_format=None)
-        self.conn.close()
         # The replication will restart, and the Aimsun API will
         # be initialized again, so we need to reconnect
         self.conn = accept_aimsun_connection(self.server)
@@ -367,107 +362,105 @@ class WolfAimsunAPI():
                                   in_format='str',
                                   out_format='i')[0]
 
-    def get_vehicle_static_info(self, veh_id):
+    def get_vehicle_static_info(self,
+                                veh_id,
+                                tracked=True,
+                                keys=aimsun_struct.keys_static_veh_info,):
         """
-        Return the static information of the specified vehicle.
+        Returns the static information of the specified vehicle.
 
         Parameters
         ----------
         veh_id : int
-            name of the vehicle in Aimsun
+            id of the vehicle in Aimsun
+        tracked : bool
+            Whether or not the vehicle is tracked (tracked vehicles do
+            not have to be found by the simulator, so information is returned
+            faster)
+        keys : tuple of strings, optional
+            Keys of the attributes that should be returned.
+            By default, all possible keys are used.
 
         Returns
         -------
-        flow.utils.aimsun.struct.StaticInfVeh
-            static info object
+        dictionary
+            Key-value pairs for the queried keys
         """
-        static_info = aimsun_struct.StaticInfVeh()
+        static_veh_info_params = {'veh_id': veh_id,
+                                  'keys': keys,
+                                  'tracked': tracked,}
 
-        (static_info.report,
-         static_info.idVeh,
-         static_info.type,
-         static_info.length,
-         static_info.width,
-         static_info.maxDesiredSpeed,
-         static_info.maxAcceleration,
-         static_info.normalDeceleration,
-         static_info.maxDeceleration,
-         static_info.speedAcceptance,
-         static_info.minDistanceVeh,
-         static_info.giveWayTime,
-         static_info.guidanceAcceptance,
-         static_info.enrouted,
-         static_info.equipped,
-         static_info.tracked,
-         static_info.keepfastLane,
-         static_info.headwayMin,
-         static_info.sensitivityFactor,
-         static_info.reactionTime,
-         static_info.reactionTimeAtStop,
-         static_info.reactionTimeAtTrafficLight,
-         static_info.centroidOrigin,
-         static_info.centroidDest,
-         static_info.idsectionExit,
-         static_info.idLine) = self._send_command(
+        return self._send_command(
             ac.VEH_GET_STATIC,
-            veh_id,
-            in_format='i',
-            out_format='i i i f f f f f f f '
-                       'f f f i i i ? f f f '
-                       'f f i i i i'
+            static_veh_info_params,
+            in_format='dict',
+            out_format='dict',
         )
 
-        return static_info
-
-    def get_vehicle_tracking_info(self, veh_id, info_bitmap, tracked=True):
+    def get_vehicle_dynamic_info(self,
+                                 veh_id,
+                                 tracked=True,
+                                 keys=aimsun_struct.keys_dynamic_veh_info,):
         """
-        Return the tracking information of the specified vehicle.
+        Returns the dynamic information of the specified vehicle.
 
         Parameters
         ----------
         veh_id : int
-            name of the vehicle in Aimsun
-        info_bitmap : str
-            bitmap representing the tracking info to be returned
-            (cf function make_bitmap_for_tracking in vehicle/aimsun.py)
-        tracked : boolean (defaults to True)
-            whether the vehicle is tracked in Aimsun.
+            id of the vehicle in Aimsun
+        keys : tuple of strings, optional
+            Keys of attributes to be returned.
+            By default, values for all possible keys are returned.
+        tracked : boolean, optional
+            Whether the vehicle is tracked in Aimsun.
 
         Returns
         -------
-        flow.utils.aimsun.struct.InfVeh
-            tracking info object
+        dictionary
+           Key-value pairs for the queried keys
         """
+        dynamic_veh_info_params = {'veh_id': veh_id,
+                                   'keys': keys,
+                                   'tracked': tracked,}
+        return self._send_command(
+            ac.VEH_GET_DYNAMIC,
+            dynamic_veh_info_params,
+            in_format='dict',
+            out_format='dict',
+        )
 
-        # build the output format from the bitmap
-        out_format = ''
-        for i in range(len(info_bitmap)):
-            if info_bitmap[i] == '1':
-                out_format += ('f ' if i <= 12 else 'i ')
-        if out_format == '':
-            return
-        else:
-            out_format = out_format[:-1]    # remove the last space
+    def get_vehicle_acc_info(self,
+                             veh_id,
+                             tracked=True,
+                             keys=aimsun_struct.keys_acc_veh_info,):
+        """
+        Returns the Adaptive Cruise Control information of the specified vehicle.
 
-        # append tracked boolean and vehicle id to the bitmap
-        # so that the command only has one parameter
-        val = str(veh_id) + ":" + info_bitmap + ("1" if tracked else "0")
+        Parameters
+        ----------
+        veh_id : int
+            id of the vehicle in Aimsun
+        tracked : boolean, optional
+            Whether the vehicle is tracked in Aimsun.
+        keys : tuple of strings, optional
+            Keys of attributes to be returned.
+            By default, values for all possible keys are returned.
 
-        # retrieve the vehicle tracking info specified by the bitmap
-        info = self._send_command(
-            ac.VEH_GET_TRACKING,
-            val,
-            in_format='str',
-            out_format=out_format)
+        Returns
+        -------
+        dictionary
+           Key-value pairs for the queried keys
 
-        # place these tracking info into a struct
-        ret = aimsun_struct.InfVeh()
-        count = 0
-        for map_index in range(len(INFOS_ATTR_BY_INDEX)):
-            if info_bitmap[map_index] == '1':
-                setattr(ret, INFOS_ATTR_BY_INDEX[map_index], info[count])
-                count += 1
-        return ret
+        """
+        acc_veh_info_params = {'veh_id': veh_id,
+                               'keys': keys,
+                               'tracked': tracked,}
+        return self._send_command(
+            ac.VEH_GET_ACC,
+            acc_veh_info_params,
+            in_format='dict',
+            out_format='dict',
+        )
 
     def get_vehicle_leader(self, veh_id):
         """

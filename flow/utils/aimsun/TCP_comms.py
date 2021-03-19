@@ -13,8 +13,9 @@ from flow.config import (TRANSFER_DONE,         # Signals communicating the stat
 # Kinds of formats:
 # 'i'   : Integer
 # 'f'   : Float
-# 'str' : String
 # '?'   : Boolean
+# 'str' : String
+# 'dict': Dictionary
 
 def send_formatted_message(conn, format, *values):
     """
@@ -22,8 +23,15 @@ def send_formatted_message(conn, format, *values):
 
     If the message is a string, it is sent in segments of length PACKET_SIZE
     (if the string is longer than such) and concatenated on the receiving end.
+
+    If the message is a dictionary, it is first converted to a JSON string.
+
     When sending a collection of strings, the values are concatenated on the
     sending end, and sent as a single string.
+
+    When sending a collection of dicts, the dictionaries are combined into a
+    single one. In case of key conflicts, the latest dictionary's value is the
+    one that gets recorded.
 
     Parameters
     ----------
@@ -35,8 +43,13 @@ def send_formatted_message(conn, format, *values):
         Values to be encoded and sent to the receiving socket
     """
     if format == 'str':
-        # Concatenate the input strings (and encode as a bytestring for TCP)
-        message = ''.join(*values).encode()
+        # Concatenate the input strings if necessary
+        if len(values) == 1:
+            message = values[0]
+        else:
+            message = ''.join(*values)
+        # Encode as a bytestring for TCP
+        message = message.encode()
 
         # When the message is too large, send value in segments
         # and inform the client that additional information will be sent.
@@ -61,6 +74,20 @@ def send_formatted_message(conn, format, *values):
         conn.recv(STATRESP_LEN)
         conn.send(TRANSFER_DONE)
         conn.recv(STATRESP_LEN)
+
+    elif format == 'dict':
+        # Combine the input dictionaries if necessary
+        if len(values) == 1:
+            message = values[0]
+        else:
+            message = {}
+            for d in values:
+                message.update(d)
+
+        # Convert to a JSON string and send
+        json_message = json.dumps(message)
+        send_formatted_message(conn, 'str', json_message)
+
     else:
         packer = struct.Struct(format=format)
         packed_data = packer.pack(*values)
@@ -106,41 +133,15 @@ def get_formatted_message(conn, format):
 
             # Acknowledge that the status message was received
             conn.send(STATRESP)
+
+    elif format == 'dict':
+        # Receive a JSON string and decode
+        json_string = get_formatted_message(conn, 'str')
+        unpacked_data = json.loads(json_string)
+
     else:
         unpacker = struct.Struct(format=format)
         data = conn.recv(unpacker.size)
         unpacked_data = unpacker.unpack(data)
 
     return unpacked_data
-
-
-def send_dict(conn, dict):
-    """
-    Send a dictionary (converted to a JSON string, then to a bytestring)
-
-    Parameters
-    ----------
-    conn : socket.socket
-        The sending socket (either client or server)
-    dict : dictionary
-        Python dictionary to be sent
-    """
-    json_message = json.dumps(dict)
-    send_formatted_message(conn, 'str', json_message)
-
-
-def get_dict(conn):
-    """
-    Receive a dictionary (as a JSON string encoded into a bytestring)
-
-    Parameters
-    ----------
-    conn : socket.socket
-        The receiving socket (either client or server)
-
-    Returns
-    -------
-        The received dictionary
-    """
-    json_string = get_formatted_message(conn, 'str')
-    return json.loads(json_string)

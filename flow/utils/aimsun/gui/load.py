@@ -164,7 +164,6 @@ loaded network, sent back to the server, and copied over into the Wolf
 # Receive the PORT to be used for the TCP connection
 # as a command-line argument
 PORT = int(sys.argv[1])
-
 print("PORT", PORT)
 
 # Connect to the Wolf (or Flow) instance that launched the
@@ -213,8 +212,6 @@ network_data = scenario.input_data
 network_data.add_extension(os.path.join(
     config.PROJECT_PATH, 'flow/utils/aimsun/gui/run.py'), True)
 
-print("[load.py] ATTACHED API")
-
 # If subnetwork_name was specified in the Aimsun params,
 # try to only load subnetwork; it not specified or if
 # subnetwork is not found, load the whole network
@@ -229,8 +226,6 @@ if subnetwork_name is not None:
         network_data = load_network()
 else:
     network_data = load_network()
-
-print("[load.py] Got net data")
 
 # The network data is ready to be sent back to Wolf (or Flow)
 # Receive a message from the server telling us that it is

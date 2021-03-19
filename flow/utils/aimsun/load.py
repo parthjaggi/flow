@@ -2,18 +2,74 @@
 """
 Script to load an Aimsun instance from a template. Executed with the Aimsun interpreter.
 This is the version of the script that runs in a console (that is, without GUI).
+
+Once the Aimsun child process is loaded, with the script load.py running
+within its Python interpreter, a TCP connection between the Aimsun subprocess
+and the parent Wolf / Flow process is set up. Once the connection is established,
+the server sends the parameters necessary to load the Aimsun template and replication
+in a Python dictionary (sent as a json string).
+
+Among the parameters sent, the parameters that are used for
+template loading are:
+  template_path : OS Path
+      Path to the Aimsun template to be loaded
+
+  replication_name : String
+      Name of the Aimsun replication to be ran
+
+  subnetwork_name : String or None
+      Name of the subnetwork to be loaded
+
+  centroid_config_name : String or None
+      Name of a centroid configuration
+
+  sim_step : Float
+      Duration of a simulation step, in seconds
+
+  render : Boolean
+      True if simulation is to be ran in full mode, and
+      False if simulation is to be ran in batch mode (no animation)
+
+After the Aimsun template is loaded, the network data is read off the
+loaded network, sent back to the server, and copied over into the Wolf
+(or Flow) network kernel.
 """
 import os, sys
 import socket
+import flow.config as config
+from flow.utils.aimsun.TCP_comms import (send_formatted_message,
+                                         get_formatted_message)
+
+# Receive the PORT to be used for the TCP connection
+# as a command-line argument
+PORT = int(sys.argv[1])
+
+# Connect to the Wolf (or Flow) parent process through a TCP socket
+# (Wolf acts as the server, and we are connecting as a client)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((config.HOST, PORT))
+
+# Send an identifier, letting the server know that we
+# expect to receive Aimsun params and send the Aimsun
+# network data
+s.send(config.NETWORK_LOAD_ID)
+
+# Receive the Aimsun parameters
+aimsun_config = get_formatted_message(s, 'dict')
+print("AIMSUN_PARAMS", aimsun_config)
+
+# Let the server know that the parameters have been received,
+# by sending a status response message
+s.send(config.STATRESP)
 
 from PyANGBasic import *
 from PyANGKernel import *
-from PyANGConsole import *
 
-import flow.config as config
-from flow.utils.aimsun.TCP_comms import (send_formatted_message,
-                                         get_formatted_message,
-                                         send_dict, get_dict)
+if aimsun_config['render']:   # Run with GUI
+    from PyANGGui import *
+else:                         # Run in console
+    from PyANGConsole import *
+
 
 def get_by_type(model, type_string):
     """
@@ -157,72 +213,29 @@ def get_dict_from_objects(sections, nodes, turnings, cen_connections):
     return network_data
 
 
-"""
-Once the Aimsun child process is loaded, with the script load.py running
-within its Python interpreter, a TCP connection between the Aimsun subprocess
-and the parent Wolf / Flow process is set up. Once the connection is established,
-the server sends the parameters necessary to load the Aimsun template
-and replication in a Python dictionary (sent as a json string).
-
-Among the parameters sent, the parameters that are used for
-template loading are:
-  template_path : OS Path
-      Path to the Aimsun template to be loaded
-
-  replication_name : String
-      Name of the Aimsun replication to be ran
-
-  subnetwork_name : String or None
-      Name of the subnetwork to be loaded
-
-  centroid_config_name : String or None
-      Name of a centroid configuration
-
-  sim_step : Float
-      Duration of a simulation step, in seconds
-
-  render : Boolean
-      True if simulation is to be ran in full mode, and
-      False if simulation is to be ran in batch mode (no animation)
-
-After the Aimsun template is loaded, the network data is read off the
-loaded network, sent back to the server, and copied over into the Wolf
-(or Flow) network kernel.
-"""
-
-# Receive the PORT to be used for the TCP connection
-# as a command-line argument
-PORT = int(sys.argv[1])
-
-# Connect to the Wolf (or Flow) parent process through a TCP socket
-# (Wolf acts as the server, and we are connecting as a client)
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((config.HOST, PORT))
-
-# Send an identifier, letting the server know that we
-# expect to receive Aimsun params and send the Aimsun
-# network data
-s.send(config.NETWORK_LOAD_ID)
-
-# Receive the Aimsun parameters
-aimsun_config = get_dict(s)
-print("AIMSUN_PARAMS", aimsun_config)
-
-# Let the server know that the parameters have been received,
-# by sending a status response message
-s.send(config.STATRESP)
-
-
-# Initialize the Aimsun console controls
-console = ANGConsole()
-
 # Open the template in Aimsun
 template_path = aimsun_config['template_path']
-if console.open(template_path):
-    model = console.getModel()
-    print(f'[load.py] Loaded template {template_path}')
+
+# Get the Aimsun model
+if aimsun_config['render']:
+    gui = GKGUISystem.getGUISystem().getActiveGui()
+    print(f'[load.py] Loading template {template_path}')
+    gui.loadNetwork(template_path, False, True)
+    # Second argument: isATemplate : False
+    #    Do not ignore errors
+    # Third argument: checkLocks : False
+    #    Sometimes Aimsun adds a .lck extension and asks whether
+    #    to continue loading the locked file on startup.
+    #    This setting makes Aimsun ignore locks
+    model = gui.getActiveModel()
+
 else:
-    raise RuntimeError(f'[load.py] ERROR: Template {template_path} could not be loaded')
+    console = ANGConsole()
+    if console.open(template_path):
+        model = console.getModel()
+        print(f'[load.py] Loaded template {template_path}')
+    else:
+        raise RuntimeError(f'[load.py] ERROR: Template {template_path} could not be loaded')
 
 # Try to retrieve replication by name
 # If not found, use first one on the list of replications
@@ -238,7 +251,7 @@ if replication is None:
         print(f'[load.py] ERROR: No replication with name {aimsun_config["replication_name"]}'
               f' found. Launching the first one in the list, {replication_name}, instead.')
     else:
-        raise RuntimeError(f'[load.py] ERROR: No replications found.')
+        raise RuntimeError('[load.py] ERROR: No replications found.')
 
 # Retrieve experiment and scenario
 experiment = replication.getExperiment()
@@ -246,7 +259,6 @@ scenario = experiment.getScenario()
 input_data = scenario.getInputData()
 input_data.addExtension(os.path.join(
     config.PROJECT_PATH, 'flow/utils/aimsun/run.py'), True)
-
 
 # If subnetwork_name was specified in the Aimsun params,
 # try to only load subnetwork; it not specified or if
@@ -267,7 +279,7 @@ else:
 # Get a message from the server that it is ready for the network data
 s.recv(config.STATRESP_LEN)
 # Send the network dictionary
-send_dict(s, network_data)
+send_formatted_message(s, 'dict', network_data)
 # Get an acknowledgement from the server
 s.recv(config.STATRESP_LEN)
 # Close the client socket
@@ -283,7 +295,7 @@ col_port = model.getColumn('GKModel::PORT')
 model.setDataValue(col_port, PORT)
 
 # Run the replication
-GKSystem.getSystem().executeAction('execute', replication, [], "")
-# execute = in batch mode
-
-console.close()
+action = 'play' if aimsun_config['render'] else 'execute'
+# play: with animation
+# execute: in batch mode
+GKSystem.getSystem().executeAction(action, replication, [], "")
