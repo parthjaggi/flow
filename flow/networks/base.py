@@ -9,6 +9,8 @@ import time
 import xml.etree.ElementTree as ElementTree
 from lxml import etree
 from collections import defaultdict
+from flow.core.params import InFlows
+from flow.core.util import get_route_id
 
 # default sumo probability value  TODO (ak): remove
 DEFAULT_PROBABILITY = 0
@@ -375,6 +377,31 @@ class Network(object):
 
                 # vehicles to be added with different departure times
                 self.template_vehicles = veh
+
+            if 'inf' in net_params.template:
+                inflows, rou = self._inflow_infos(net_params.template['inf'])
+
+                vtypes = self._vehicle_type(net_params.template.get('vtype'))
+                cf = self._get_cf_params(vtypes)
+                lc = self._get_lc_params(vtypes)
+
+                # add the vehicle types to the VehicleParams object
+                for t in vtypes:
+                    vehicles.add(
+                        veh_id=t,
+                        length=vtypes[t]['length'],
+                        car_following_params=cf[t],
+                        lane_change_params=lc[t],
+                        num_vehicles=0,
+                    )
+
+                # add the routes of the vehicles that will be departed later
+                # under the name of the vehicle. This will later be identified
+                # by k.vehicles._add_departed
+                self.routes = rou
+
+                # vehicles to be added with different departure times
+                net_params.inflows = inflows
 
             if 'add' in net_params.template:
                 e1Detectors, e2Detectors = self._get_detector_params(net_params.template['add'])
@@ -750,6 +777,60 @@ class Network(object):
                 routes_data[route.attrib['id']] = route_edges
 
         return vehicle_data, routes_data
+
+    @staticmethod
+    def _inflow_infos(file_names):
+        """Import of inflows from a configuration file.
+
+        This is a utility function for computing inflows information. It
+        imports a network configuration file, and returns the information on
+        the inflow and add it into the Inflows object.
+        """
+        if isinstance(file_names, str):
+            file_names = [file_names]
+
+        routes_data = dict()
+        flow_data = InFlows()
+        type_data = defaultdict(int)
+
+        for filename in file_names:
+            # import the .net.xml file containing all edge/type data
+            parser = etree.XMLParser(recover=True)
+            tree = ElementTree.parse(filename, parser=parser)
+            root = tree.getroot()
+
+            # collect the departure properties and routes and vehicles whose
+            # properties are instantiated within the .rou.xml file. This will
+            # only apply if such data is within the file (it is not implemented
+            # by networks in Flow).
+            for flow in root.findall('flow'):
+                # collect the edges the vehicle is meant to traverse
+                route = flow.find('route')
+                route_edges = route.attrib["edges"].split(' ')
+
+                # collect the names of each vehicle type and number of vehicles
+                # of each type
+                type_vehicle = flow.attrib['type']
+                type_data[type_vehicle] += 1
+
+                flow_data.add(
+                    edge=None,
+                    veh_type=type_vehicle,
+                    probability=float(flow.attrib['probability']),
+                    depart_lane="free",
+                    begin=int(flow.attrib['begin']),
+                    end=int(flow.attrib['end']),
+                    route=get_route_id(flow.attrib['id'], 0)
+                )
+                routes_data[flow.attrib['id']] = route_edges
+
+            # collect the edges the vehicle is meant to traverse for the given
+            # sets of routes that are not associated with individual vehicles
+            for route in root.findall('route'):
+                route_edges = route.attrib["edges"].split(' ')
+                routes_data[route.attrib['id']] = route_edges
+
+        return flow_data, routes_data
 
     @staticmethod
     def _vehicle_type(filename):

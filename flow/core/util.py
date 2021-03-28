@@ -315,3 +315,7 @@ def get_phase_action(current_phase, corrected_action):
     if corrected_action == A.CHANGE:
         next_phase = 1 - current_phase
         return phase_to_onehot_phase[next_phase]
+
+
+def get_route_id(route_id, idx):
+    return 'route_{}_{}'.format(route_id, idx)
