@@ -1199,7 +1199,7 @@ class InFlows:
             raise ValueError(
                 "Inflow.add called with parameter 'probability' set to {}, but"
                 " probability should be between 0 and 1.".format(probability))
-        if begin is not None and begin < 0:
+        if begin is not None and begin < 1:
             raise ValueError(
                 "Inflow.add called with parameter 'begin' set to {}, but begin"
                 " should be greater or equal than 1 second.".format(begin))

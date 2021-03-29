@@ -817,7 +817,6 @@ class Network(object):
                     edge=None,
                     veh_type=type_vehicle,
                     probability=float(flow.attrib['probability']),
-                    depart_lane="free",
                     begin=int(flow.attrib['begin']),
                     end=int(flow.attrib['end']),
                     route=get_route_id(flow.attrib['id'], 0)
