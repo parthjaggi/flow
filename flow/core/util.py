@@ -318,4 +318,4 @@ def get_phase_action(current_phase, corrected_action):
 
 
 def get_route_id(route_id, idx):
-    return 'route_{}_{}'.format(route_id, idx)
+    return 'route{}_{}'.format(route_id, idx)
