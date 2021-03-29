@@ -3,8 +3,11 @@
 import csv
 import errno
 import os
+import numpy as np
+from pathlib import Path
 from lxml import etree
 from xml.etree import ElementTree
+from wolf.utils.enums import ExtendChangeNoopAction as A
 
 
 def makexml(name, nsl):
@@ -153,3 +156,166 @@ def update_all_dict_values(my_dict, value):
     for k in my_dict.keys():
         my_dict[k] = value
     return my_dict
+
+
+def first(iterable):
+    """
+    Returns first element of iterable.
+    """
+    return next(iter(iterable))
+
+
+def compactify_episode(transitions, intersection_id):
+    """
+    Generates compactified episode arrays using transitions collected over the episode.
+    Note that state leads action by 1 timestep.
+    This is because the first state generated using env.reset() is not captured in the transitions array passed as argument here.
+    Easy fix is to ignore the first element of the action array.
+
+    Args:
+        transitions (list): List of transitions collected.
+        intersection_id (str): Namely.
+
+    Returns:
+        dict: Compactified episode.
+    """
+    episode = {k: [t[k] for t in transitions] for k in first(transitions)}
+    episode['obs'] = np.array(list(map(lambda x: x[intersection_id]['dtse'], episode['observation'])))
+    episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['phase'], episode['observation'])))
+    episode['reward'] = np.array(list(map(lambda x: x[intersection_id], episode['reward'])))
+    episode['action'] = np.array(list(map(lambda x: x[intersection_id], episode['action'])))
+    corrected_actions, corrected_phase_actions = get_corrected_actions(episode['phase'][:, 0, 3:, :, 0], episode['action'])
+    episode['corrected_action'] = corrected_actions
+    episode['corrected_p_action'] = corrected_phase_actions
+    
+    del episode['observation']
+    return episode
+
+
+def get_sow45_code_directory():
+    """
+    Returns the sow45_code repository directory.
+
+    Returns:
+        pathlib.PosixPath: wolf root directory object.
+    """
+    path = Path(os.getcwd())
+    while ('sow45_code' not in path.name):
+        path = path.parent
+    return path
+
+
+def get_flow_root_directory():
+    """
+    Returns the flow root directory.
+
+    Returns:
+        pathlib.PosixPath: wolf root directory object.
+    """
+    path = Path(__file__)
+    while (path.name != 'flow'):
+        path = path.parent
+    return path
+
+
+def save_episode_using_numpy(episode, base_fname):
+    """
+    Saves episode using numpy.save method.
+
+    Args:
+        episode (dict): Dictionary of episode.
+        base_fname (str): Base filename.
+    """
+    base_path = get_flow_root_directory().parent/'episodes'
+    base_path.mkdir(exist_ok=True)
+    ep_count = 0
+    dest_fname = Path(base_path/f'{base_fname}{ep_count}.npy')
+    while (dest_fname.exists()):
+        ep_count += 1
+        dest_fname = Path(base_path/f'{base_fname}{ep_count}.npy')
+    np.save(dest_fname, episode)
+
+
+def get_current_phase_time(phase_history):
+    """
+    Given phase history array of shape (1, history_length), return the phase time of current phase.
+
+    Args:
+        phase_history (numpy.ndarray): numpy array of phase history.
+            Should be of the shape: (1, history_length). Eg: (1, 60).
+
+    Returns:
+        int: Phase time of current phase.
+    """
+    current_phase = phase_history[:, -1]
+    negative_phase = 1 - current_phase
+    
+    reversed_phase = phase_history[:, ::-1]
+    phase_time = np.argmax(reversed_phase == negative_phase)
+    return current_phase, phase_time
+
+    
+def get_corrected_actions(phase_history, action):
+    """
+    Given multiple timesteps of phase history and actions, generate syncronized corrected actions.
+    Generated current actions are syncronized with observation timesteps.
+    Since observations start from t=1 while actions start from t=0, current_action is action[t + 1].
+    Illegal CHANGE actions are changed to EXTEND, and vice versa for illegal EXTEND actions.
+    This gives corrected_action from current_action.
+
+    Args:
+        phase_history (numpy.ndarray): numpy array of phase history over multiple timesteps.
+            Should be of the shape: (num_timesteps, 1, history_length). Eg: (500, 1, 60).
+        action (numpy.ndarray): numpy array of actions over multiple timesteps.
+            Should of the shape: (num_timesteps,). Eg: (500,).
+
+    Returns:
+        numpy.ndarray: numpy array of corrected actions.
+            Should be of the shape: (num_timesteps - 1,). Eg: (499,).
+    """
+    MIN_PHASE_TIME = 10
+    MAX_PHASE_TIME = 60
+    corrected_actions = []
+    corrected_phase_actions = []
+
+    # no corresponding action for final timestep, therefore loop stops before phase_history[-1].
+    for t, ph in enumerate(phase_history[:-1]):
+        current_phase, current_phase_time = get_current_phase_time(ph)
+        current_action = action[t + 1]
+        corrected_action = A.CHANGE if (current_phase_time >= MIN_PHASE_TIME) and (current_action == A.CHANGE) else A.EXTEND
+        if current_phase_time == MAX_PHASE_TIME:
+            corrected_action = A.CHANGE
+        corrected_actions.append(corrected_action)
+
+        phase_action = get_phase_action(first(current_phase), corrected_action)
+        corrected_phase_actions.append(phase_action)
+
+    corrected_actions = np.array(corrected_actions)
+    corrected_phase_actions = np.array(corrected_phase_actions)
+    return corrected_actions, corrected_phase_actions
+
+
+def get_phase_action(current_phase, corrected_action):
+    """
+    Get onehot phase action from EXTEND/CHANGE type action and current phase.
+    Currently, only compatible with 2 phase intersections, similar to those seen in GridEnvs.
+
+    Args:
+        current_phase (int): Current phase integer. Can be RED (0) or GREEN (1).
+        corrected_action (int): Current action integer. Can be EXTEND (0) or CHANGE (1).
+
+    Returns:
+        list: Onehot phase action.
+    """
+    phase_to_onehot_phase = {0: [1, 0], 1: [0, 1]}
+
+    if corrected_action == A.EXTEND:
+        return phase_to_onehot_phase[current_phase]
+    
+    if corrected_action == A.CHANGE:
+        next_phase = 1 - current_phase
+        return phase_to_onehot_phase[next_phase]
+
+
+def get_route_id(route_id, idx):
+    return 'route{}_{}'.format(route_id, idx)
