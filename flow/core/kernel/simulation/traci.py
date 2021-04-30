@@ -35,6 +35,8 @@ class TraCISimulation(KernelSimulation):
         KernelSimulation.__init__(self, master_kernel)
         # contains the subprocess.Popen instance used to start traci
         self.sumo_proc = None
+        self.sim_step = None
+        self.time = 0
 
     def pass_api(self, kernel_api):
         """See parent class.
@@ -57,7 +59,10 @@ class TraCISimulation(KernelSimulation):
 
     def update(self, reset):
         """See parent class."""
-        pass
+        if reset:
+            self.time = 0
+        else:
+            self.time += self.sim_step
 
     def close(self):
         """See parent class."""
@@ -74,6 +79,8 @@ class TraCISimulation(KernelSimulation):
         to initialize a sumo instance. Also initializes a traci connection to
         interface with sumo from Python.
         """
+        self.sim_step = sim_params.sim_step
+
         error = None
         for _ in range(RETRIES_ON_ERROR):
             try:
