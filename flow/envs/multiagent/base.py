@@ -37,7 +37,7 @@ class MultiEnv(MultiAgentEnv, Env):
                 raise NotImplementedError(self._action_repeat_type)
         else:
             return self._step_helper(rl_actions)
- 
+
     def _action_repeat_helper(self, rl_actions):
         """
         For self._repeat_count number of steps, the given rl_actions is performed over the environment repeatedly.
@@ -56,7 +56,7 @@ class MultiEnv(MultiAgentEnv, Env):
             current_step += 1
 
         return states, total_reward, done, infos
- 
+
     def _extend_action_repeat_helper(self, rl_actions):
         """
         Executes the given rl_actions in the first timestep.
@@ -102,7 +102,7 @@ class MultiEnv(MultiAgentEnv, Env):
         while (current_step < self._repeat_count) and not done_all:
             if current_step > 0:
                 rl_actions = update_all_dict_values(rl_actions, EXTEND)
-            
+
             is_actionable = False
             while not is_actionable and not done_all:
                 states, reward, done, infos = self._step_helper(rl_actions)
@@ -180,6 +180,10 @@ class MultiEnv(MultiAgentEnv, Env):
             self.k.vehicle.choose_routes(routing_ids, routing_actions)
 
             self.apply_rl_actions(rl_actions)
+
+            # If applicable, generate lane arrivals scheduled for this simstep
+            if self.network.net_params.arrivals_remaining:
+                self.network.net_params.arrivals_remaining = self.gen_lane_arrivals()
 
             self.additional_command()
 
@@ -357,6 +361,10 @@ class MultiEnv(MultiAgentEnv, Env):
                     pos=pos,
                     speed=speed)
 
+        # Reset vehicle lane arrivals
+        if self.network.net_params.lane_arrival_sched is not None:
+            self.network.net_params.lane_arrivals_iter = iter(self.network.net_params.lane_arrival_sched)
+            self.network.net_params.arrivals_remaining = True
 
         # TODO [nicolas added this]
         if perform_extra_work:
@@ -439,3 +447,29 @@ class MultiEnv(MultiAgentEnv, Env):
         # clip according to the action space requirements
         clipped_actions = self.clip_actions(rl_actions)
         self._apply_rl_actions(clipped_actions)
+
+    def gen_lane_arrivals(self):
+        """
+        If a schedule of lane arrivals is attached to the environment,
+        generates the vehicles according to the attached schedule.
+        Returns a bool that determines if this function is called again
+        on the following simulation step
+        """
+        if self.network.net_params.lane_arrivals_iter is None:
+            return False    # No vehicle arrivals scheduled
+
+        try:
+            cur_step_arrivals = next(self.network.net_params.lane_arrivals_iter)
+        except StopIteration:
+            return False    # No more vehicles to be generated
+
+        # Generate a vehicle for each lane that is on the schedule
+        # for the current simulation step
+        for lane_id, veh_id in cur_step_arrivals:
+            edge_id = lane_id[:-2]
+            lane = lane_id[-1]
+            self.k.vehicle.add(veh_id, 'human', edge_id, 0, lane, 10)
+
+        # If got here, call this function again on the next sim step
+        return True
+
