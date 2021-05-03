@@ -193,9 +193,9 @@ def compactify_episode(transitions, intersection_id):
     episode['all_veh_speed'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['all_veh_speed'], episode['observation']))[:-1])
 
     episode['phase'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['phase'], episode['observation']))[:-1])
-    episode['enter_history'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['enter_history'], episode['observation']))[:-1])
-    episode['on_history'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['on_history'], episode['observation']))[:-1])
-    episode['speed_history'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['speed_history'], episode['observation']))[:-1])
+    # episode['enter_history'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['enter_history'], episode['observation']))[:-1])
+    # episode['on_history'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['on_history'], episode['observation']))[:-1])
+    # episode['speed_history'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['speed_history'], episode['observation']))[:-1])
     episode['phase_action'] = np.array(list(map(lambda x: x[intersection_id]['detector_obs']['phase_action'], episode['observation']))[:-1])
     episode['reward'] = np.array(list(map(lambda x: x[intersection_id], episode['reward']))[1:])
     episode['action'] = np.array(list(map(lambda x: x[intersection_id], episode['action']))[1:])
