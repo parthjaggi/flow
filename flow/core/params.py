@@ -661,6 +661,7 @@ class EnvParams:
         evaluate=False,
         clip_actions=True,
         store_transitions=False,
+        subfolder=None
     ):
         """Instantiate EnvParams."""
         self.additional_params = additional_params if additional_params is not None else {}
@@ -670,6 +671,7 @@ class EnvParams:
         self.evaluate = evaluate
         self.clip_actions = clip_actions
         self.store_transitions = store_transitions
+        self.subfolder = subfolder
 
     def get_additional_param(self, key):
         """Return a variable from additional_params."""

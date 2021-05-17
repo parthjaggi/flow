@@ -233,7 +233,7 @@ def get_flow_root_directory():
     return path
 
 
-def save_episode_using_numpy(episode, base_fname):
+def save_episode_using_numpy(episode, base_fname, subfolder=None):
     """
     Saves episode using numpy.save method.
 
@@ -242,6 +242,8 @@ def save_episode_using_numpy(episode, base_fname):
         base_fname (str): Base filename.
     """
     base_path = get_flow_root_directory().parent/'episodes'
+    if subfolder:
+        base_path = base_path/subfolder
     base_path.mkdir(exist_ok=True)
     ep_count = 0
     dest_fname = Path(base_path/f'{base_fname}{ep_count}.npy')
