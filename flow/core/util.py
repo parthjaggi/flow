@@ -212,15 +212,15 @@ def compactify_episode(transitions, intersection_id):
     return episode
 
 
-def get_wolf_root_directory():
+def get_sow45_code_directory():
     """
-    Returns the wolf root directory.
+    Returns the sow45_code repository directory.
 
     Returns:
         pathlib.PosixPath: wolf root directory object.
     """
     path = Path(os.getcwd())
-    while (path.name != 'wolf'):
+    while ('sow45_code' not in path.name):
         path = path.parent
     return path
 
@@ -337,3 +337,7 @@ def get_phase_action(current_phase, corrected_action):
     if corrected_action == A.CHANGE:
         next_phase = 1 - current_phase
         return phase_to_onehot_phase[next_phase]
+
+
+def get_route_id(route_id, idx):
+    return 'route{}_{}'.format(route_id, idx)

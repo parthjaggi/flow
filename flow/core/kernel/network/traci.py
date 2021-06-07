@@ -1,7 +1,7 @@
 """Script containing the TraCI network kernel class."""
 
 from flow.core.kernel.network import BaseKernelNetwork
-from flow.core.util import makexml, printxml, ensure_dir
+from flow.core.util import makexml, printxml, ensure_dir, get_route_id
 import time
 import os
 import subprocess
@@ -794,7 +794,7 @@ class TraCIKernelNetwork(BaseKernelNetwork):
                 r, _ = routes[route_id][i]
                 routes_data.append(E(
                     'route',
-                    id='route{}_{}'.format(route_id, i),
+                    id=get_route_id(route_id, i),
                     edges=' '.join(r)
                 ))
 
