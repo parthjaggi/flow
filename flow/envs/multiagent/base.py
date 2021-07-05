@@ -189,6 +189,12 @@ class MultiEnv(MultiAgentEnv, Env):
             # store new observations in the vehicles and traffic lights class
             self.k.update(reset=False)
 
+            # Xiaoyu: env.statistic_collector HAS TO BE updated AFTER flow.kernel updated.
+            # Otherwise some of the traffic status collector gets from the flow.kernel
+            # will be the old ones. Only status getting from traci_api directly will always
+            # be synchronised with the simulator (what seen in the render).
+            self.additional_command_post_step()
+
             # update the colors of vehicles
             if self.sim_params.render:
                 self.k.vehicle.update_vehicle_colors()
@@ -209,7 +215,8 @@ class MultiEnv(MultiAgentEnv, Env):
             done['__all__'] = True
         else:
             done['__all__'] = False
-        infos = {key: {} for key in states.keys()}
+        # infos = {key: {} for key in states.keys()}
+        infos = self.get_info()
 
         # compute the reward
         if self.env_params.clip_actions:
@@ -413,3 +420,6 @@ class MultiEnv(MultiAgentEnv, Env):
         # clip according to the action space requirements
         clipped_actions = self.clip_actions(rl_actions)
         self._apply_rl_actions(clipped_actions)
+
+    def additional_command_post_step(self):
+        pass
