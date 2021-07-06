@@ -326,7 +326,7 @@ class TraCIVehicle(KernelVehicle):
         self.kernel_api.vehicle.subscribe(veh_id, [
             tc.VAR_LANE_INDEX, tc.VAR_LANEPOSITION, tc.VAR_ROAD_ID,
             tc.VAR_SPEED, tc.VAR_EDGES, tc.VAR_POSITION, tc.VAR_ANGLE,
-            tc.VAR_SPEED_WITHOUT_TRACI
+            tc.VAR_SPEED_WITHOUT_TRACI, tc.VAR_DISTANCE
         ])
         self.kernel_api.vehicle.subscribeLeader(veh_id, 2000)
 
@@ -1114,3 +1114,7 @@ class TraCIVehicle(KernelVehicle):
     def set_max_speed(self, veh_id, max_speed):
         """See parent class."""
         self.kernel_api.vehicle.setMaxSpeed(veh_id, max_speed)
+
+    def get_distance(self, veh_id, error=-1001):
+        """See parent class."""
+        return self.__sumo_obs.get(veh_id, {}).get(tc.VAR_DISTANCE, error)
