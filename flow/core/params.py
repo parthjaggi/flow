@@ -709,6 +709,9 @@ class NetParams:
         self.osm_path = osm_path
         self.template = template
         self.additional_params = additional_params or {}
+        # Storage of lane arrivals
+        self.lane_arrival_sched = None
+        self.arrivals_remaining = False
 
 
 class InitialConfig:

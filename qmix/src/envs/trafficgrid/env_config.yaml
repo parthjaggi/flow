@@ -1,0 +1,34 @@
+          # with add_noop_action: True
+          "env_config":
+            "render": False
+            "simulator": "traci"
+            "sim_params":
+              "restart_instance": True
+              "sim_step": 1
+              "print_warnings": False
+              "render": False
+            "env_state_params": null
+            "groups_agent_params": null
+            "multi_agent_config_params":
+              "name": "shared_policy"
+              "params": {}
+            "agents_params":
+              "name": "all_the_same"
+              "params":
+                "default_policy": null
+                "global_reward": True
+                "action_params":
+                  "name": "ExtendChangePhaseConnector"
+                  "params":
+                    "add_noop_action": true
+                "obs_params":
+                  "name": "TDTSEConnector"
+                  "params":
+                    "obs_params":
+                      "num_history": 60
+                      "detector_position": [5, 295]
+                    "phase_channel": true
+                "reward_params":
+                  "name": "QueueRewardConnector"
+                  "params":
+                    "stop_speed": 2
