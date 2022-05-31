@@ -1281,22 +1281,26 @@ class DetectorParams:
         assert network is not None, 'Network cannot be None.'
 
         connections = network.connections[node_id]
+        edge_id_idx_mapping = [edge['id'] for edge in network.edges]
         incoming_lanes = list(set([f"{c['from']}_{c['fromLane']}" for c in connections]))
+        incoming_lanes.sort()
         counter = 0
 
         for lane_id in incoming_lanes:
+            lane_length = network.edges[edge_id_idx_mapping.index(lane_id.rsplit('_', 1)[0])]['length']
             for position in positions:
-                detector = {
-                    'id': f'{name}_{counter}',
-                    'lane': lane_id,
-                    'pos': str(position),
-                    'freq': str(frequency),
-                    'file': storage_file,
-                    'friendlyPos': str(friendly_position).lower(),
-                    'type': 'inductionLoop',
-                }
-                counter += 1
-                self.__detectors.append(detector)
+                if abs(position) < int(lane_length):
+                    detector = {
+                        'id': f'{name}_{counter}',
+                        'lane': lane_id,
+                        'pos': str(position),
+                        'freq': str(frequency),
+                        'file': storage_file,
+                        'friendlyPos': str(friendly_position).lower(),
+                        'type': 'inductionLoop',
+                    }
+                    counter += 1
+                    self.__detectors.append(detector)
 
     def add_lane_area_detector(self, det_params):
         raise NotImplementedError
