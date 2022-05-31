@@ -122,16 +122,16 @@ class TraCISimulation(KernelSimulation):
                 else:
                     emission_out = None
 
-                # add the floating car data path to the sumo command (if req.)
-                if sim_params.fcd_path is not None:
-                    ensure_dir(sim_params.fcd_path)
-                    fcd_out = os.path.join(
-                        sim_params.fcd_path,
-                        "{0}-fcd.xml.gz".format(network.name))
-                    sumo_call.append("--fcd-output")
-                    sumo_call.append(fcd_out)
-                else:
-                    fcd_out = None
+                # # add the floating car data path to the sumo command (if req.)
+                # if sim_params.fcd_path is not None:
+                #     ensure_dir(sim_params.fcd_path)
+                #     fcd_out = os.path.join(
+                #         sim_params.fcd_path,
+                #         "{0}-fcd.xml.gz".format(network.name))
+                #     sumo_call.append("--fcd-output")
+                #     sumo_call.append(fcd_out)
+                # else:
+                #     fcd_out = None
 
                 if sim_params.overtake_right:
                     sumo_call.append("--lanechange.overtake-right")
